@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"example.org/quark/internal/fsutil"
 )
 
 var now = time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
@@ -160,10 +162,10 @@ func TestLoadUnreadable(t *testing.T) {
 
 func TestWriteFileAtomicReplacesExisting(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "f.json")
-	if err := WriteFileAtomic(path, []byte("old"), 0o600); err != nil {
+	if err := fsutil.WriteFileAtomic(path, []byte("old"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := WriteFileAtomic(path, []byte("new"), 0o600); err != nil {
+	if err := fsutil.WriteFileAtomic(path, []byte("new"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	b, _ := os.ReadFile(path)
@@ -175,7 +177,7 @@ func TestWriteFileAtomicReplacesExisting(t *testing.T) {
 	if err := os.Mkdir(ro, 0o500); err != nil {
 		t.Fatal(err)
 	}
-	if err := WriteFileAtomic(filepath.Join(ro, "x"), []byte("x"), 0o600); err == nil && os.Getuid() != 0 {
+	if err := fsutil.WriteFileAtomic(filepath.Join(ro, "x"), []byte("x"), 0o600); err == nil && os.Getuid() != 0 {
 		t.Fatal("write into read-only dir succeeded")
 	}
 }

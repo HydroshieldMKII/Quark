@@ -13,6 +13,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"example.org/quark/internal/fsutil"
 )
 
 // CurrentVersion is the schema version written by this build.
@@ -196,48 +198,5 @@ func Save(path string, s Settings) error {
 	if err != nil {
 		return err
 	}
-	return WriteFileAtomic(path, append(data, '\n'), 0o600)
-}
-
-// WriteFileAtomic writes data to path so that readers see either the old or
-// the new content, never a partial file, even if the process crashes.
-func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return err
-	}
-	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".tmp-*")
-	if err != nil {
-		return err
-	}
-	tmpName := tmp.Name()
-	ok := false
-	defer func() {
-		if !ok {
-			_ = tmp.Close()
-			_ = os.Remove(tmpName)
-		}
-	}()
-	if err := tmp.Chmod(perm); err != nil {
-		return err
-	}
-	if _, err := tmp.Write(data); err != nil {
-		return err
-	}
-	if err := tmp.Sync(); err != nil {
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		return err
-	}
-	ok = true
-	// Persist the rename itself.
-	if d, err := os.Open(dir); err == nil { //nolint:gosec // dir of our own file
-		_ = d.Sync()
-		_ = d.Close()
-	}
-	return nil
+	return fsutil.WriteFileAtomic(path, append(data, '\n'), 0o600)
 }
