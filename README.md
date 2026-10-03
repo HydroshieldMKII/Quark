@@ -40,3 +40,13 @@ inside the Flatpak sandbox, so it uses the `proton-drive` CLI from your PATH and
 ## License
 
 GPL-3.0-or-later. See `LICENSE`.
+
+## Troubleshooting
+
+- **The app does not start and the terminal shows `bwrap: Can't find source path
+  /run/user/.../doc/by-app/...`.** The XDG document portal lost its FUSE mount (this can happen
+  after a Flatpak build or a session hiccup). Run `systemctl --user restart xdg-document-portal`
+  and launch again. `make flatpak` prints this hint when it detects the condition.
+- **`quark-mount` says the folder is busy on unmount.** Close programs that have files open in
+  the folder, then run `fusermount3 -u ~/ProtonDrive`. Files that could not be uploaded are kept
+  under `~/.cache/quark/mount/unsynced/`.

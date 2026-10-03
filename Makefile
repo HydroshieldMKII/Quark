@@ -84,6 +84,10 @@ FLATPAK_BUILDER ?= $(shell command -v flatpak-builder 2>/dev/null || echo flatpa
 flatpak:
 	$(FLATPAK_BUILDER) --user --install --force-clean --install-deps-from=flathub \
 		build-dir build/flatpak/$(APP_ID).yml
+	@if ! mountpoint -q "$${XDG_RUNTIME_DIR:-/run/user/$$(id -u)}/doc"; then \
+		echo "WARNING: the document portal is not mounted, Flatpak apps will fail with"; \
+		echo "         'bwrap: Can't find source path .../doc/by-app/...'. Fix with:"; \
+		echo "         systemctl --user restart xdg-document-portal"; fi
 
 clean:
 	rm -rf bin coverage.out coverage.html build-dir .flatpak-builder
