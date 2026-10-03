@@ -27,17 +27,18 @@ type filesView struct {
 	section drive.Section
 	label   string
 
-	page      *adw.NavigationPage
-	title     *adw.WindowTitle
-	upButton  *gtk.Button
-	newFolder *gtk.Button
-	upload    *gtk.MenuButton
-	emptyBtn  *gtk.Button
-	search    *gtk.SearchBar
-	entry     *gtk.SearchEntry
-	stack     *gtk.Stack
-	errPage   *adw.StatusPage
-	emptyPage *adw.StatusPage
+	page       *adw.NavigationPage
+	title      *adw.WindowTitle
+	path       *gtk.Box
+	titleStack *gtk.Stack
+	upButton   *gtk.Button
+	addButton  *gtk.MenuButton
+	emptyBtn   *gtk.Button
+	search     *gtk.SearchBar
+	entry      *gtk.SearchEntry
+	stack      *gtk.Stack
+	errPage    *adw.StatusPage
+	emptyPage  *adw.StatusPage
 
 	model *gtk.StringList
 	sel   *gtk.MultiSelection
@@ -46,6 +47,10 @@ type filesView struct {
 	nodes map[string]drive.Node
 	order []string
 	index map[string]uint // uid -> position
+
+	sizeCol *gtk.ColumnViewColumn
+	modCol  *gtk.ColumnViewColumn
+	compact bool
 
 	actions map[string]*gio.SimpleAction
 	sortAct *gio.SimpleAction
@@ -58,26 +63,30 @@ func newFilesView(w *window, section drive.Section, label string) *filesView {
 
 	header := adw.NewHeaderBar()
 	v.title = adw.NewWindowTitle(label, "")
-	header.SetTitleWidget(v.title)
+	v.path = gtk.NewBox(gtk.OrientationHorizontal, 0)
+	v.path.AddCSSClass("quark-path")
+	v.titleStack = gtk.NewStack()
+	v.titleStack.SetHhomogeneous(false)
+	v.titleStack.AddNamed(v.title, "title")
+	v.titleStack.AddNamed(v.path, "path")
+	header.SetTitleWidget(v.titleStack)
 
 	v.upButton = gtk.NewButtonFromIconName("go-up-symbolic")
 	v.upButton.SetTooltipText(T("Parent Folder"))
 	v.upButton.SetActionName("files.up")
 	header.PackStart(v.upButton)
 
-	v.newFolder = gtk.NewButtonFromIconName("folder-new-symbolic")
-	v.newFolder.SetTooltipText(T("New Folder"))
-	v.newFolder.SetActionName("files.new-folder")
-	header.PackStart(v.newFolder)
-
-	upMenu := gio.NewMenu()
-	upMenu.Append(T("Upload Files…"), "files.upload-files")
-	upMenu.Append(T("Upload Folder…"), "files.upload-folder")
-	v.upload = gtk.NewMenuButton()
-	v.upload.SetIconName("document-send-symbolic")
-	v.upload.SetTooltipText(T("Upload"))
-	v.upload.SetMenuModel(upMenu)
-	header.PackStart(v.upload)
+	addMenu := gio.NewMenu()
+	addMenu.Append(T("New Folder…"), "files.new-folder")
+	uploads := gio.NewMenu()
+	uploads.Append(T("Upload Files…"), "files.upload-files")
+	uploads.Append(T("Upload Folder…"), "files.upload-folder")
+	addMenu.AppendSection("", uploads)
+	v.addButton = gtk.NewMenuButton()
+	v.addButton.SetIconName("list-add-symbolic")
+	v.addButton.SetTooltipText(T("New"))
+	v.addButton.SetMenuModel(addMenu)
+	header.PackStart(v.addButton)
 
 	viewMenu := gio.NewMenu()
 	sortSection := gio.NewMenu()
@@ -233,6 +242,7 @@ func (v *filesView) buildList() {
 	sizeCol.SetFixedWidth(110)
 	sizeCol.SetResizable(true)
 	v.view.AppendColumn(sizeCol)
+	v.sizeCol = sizeCol
 
 	modCol := gtk.NewColumnViewColumn(T("Modified"), v.factory(func() gtk.Widgetter {
 		l := gtk.NewLabel("")
@@ -255,6 +265,7 @@ func (v *filesView) buildList() {
 	modCol.SetFixedWidth(170)
 	modCol.SetResizable(true)
 	v.view.AppendColumn(modCol)
+	v.modCol = modCol
 
 	// Context menu on right click (and long press on touch screens).
 	v.popup = gtk.NewPopoverMenuFromModel(v.contextMenu())
@@ -312,18 +323,19 @@ func listItem(obj *glib.Object) *gtk.ListItem {
 }
 
 func setNodeIcon(img *gtk.Image, n drive.Node) {
+	img.SetPixelSize(24)
 	switch {
 	case n.IsFolder():
-		img.SetFromIconName("folder-symbolic")
+		img.SetFromIconName("folder")
 	case n.MediaType != "":
 		ct := gio.ContentTypeFromMIMEType(n.MediaType)
-		if icon := gio.ContentTypeGetSymbolicIcon(ct); icon != nil {
+		if icon := gio.ContentTypeGetIcon(ct); icon != nil {
 			img.SetFromGIcon(icon)
 			return
 		}
-		img.SetFromIconName("text-x-generic-symbolic")
+		img.SetFromIconName("text-x-generic")
 	default:
-		img.SetFromIconName("text-x-generic-symbolic")
+		img.SetFromIconName("text-x-generic")
 	}
 }
 
@@ -379,24 +391,81 @@ func (v *filesView) rowPosition(w gtk.Widgetter) (uint, bool) {
 
 // ----- state -----
 
-func (v *filesView) update(st app.BrowserState) {
-	// Title: the current folder; subtitle: where it is.
-	if st.Location.IsRoot() {
+// setCompact switches between the full layout and the narrow one (folder
+// name instead of the path bar; no Size and Modified columns).
+func (v *filesView) setCompact(on bool) {
+	v.compact = on
+	v.sizeCol.SetVisible(!on)
+	v.modCol.SetVisible(!on)
+	v.updatePath(v.b.State().Location)
+}
+
+// maxCrumbs is how many breadcrumb buttons are shown before collapsing the middle.
+const maxCrumbs = 4
+
+// updatePath shows the section name at a root, and a clickable breadcrumb
+// path bar inside folders ("My files › Documents › Taxes").
+func (v *filesView) updatePath(loc app.Location) {
+	if loc.IsRoot() {
 		v.title.SetTitle(v.label)
-		v.title.SetSubtitle("")
-	} else {
-		trail := st.Location.Trail
-		v.title.SetTitle(trail[len(trail)-1].Name)
-		parts := []string{v.label}
-		for _, c := range trail[:len(trail)-1] {
-			parts = append(parts, c.Name)
-		}
-		v.title.SetSubtitle(strings.Join(parts, " › "))
+		v.titleStack.SetVisibleChildName("title")
+		return
 	}
-	v.newFolder.SetVisible(st.Location.CanCreate() || st.Location.Section == drive.SectionMyFiles)
-	v.upload.SetVisible(st.Location.CanCreate() || st.Location.Section == drive.SectionMyFiles)
-	v.newFolder.SetSensitive(st.Location.CanCreate())
-	v.upload.SetSensitive(st.Location.CanCreate())
+	if v.compact {
+		// Narrow window: only the current folder's name.
+		v.title.SetTitle(loc.Trail[len(loc.Trail)-1].Name)
+		v.titleStack.SetVisibleChildName("title")
+		return
+	}
+	for c := v.path.FirstChild(); c != nil; c = v.path.FirstChild() {
+		v.path.Remove(c)
+	}
+	type crumb struct {
+		label string
+		depth int
+	}
+	crumbs := []crumb{{v.label, 0}}
+	for i, c := range loc.Trail {
+		crumbs = append(crumbs, crumb{c.Name, i + 1})
+	}
+	if len(crumbs) > maxCrumbs {
+		tail := crumbs[len(crumbs)-(maxCrumbs-1):]
+		crumbs = append([]crumb{crumbs[0], {"…", -1}}, tail...)
+	}
+	for i, c := range crumbs {
+		if i > 0 {
+			sep := gtk.NewLabel("›")
+			sep.AddCSSClass("quark-path-sep")
+			v.path.Append(sep)
+		}
+		last := i == len(crumbs)-1
+		switch {
+		case last:
+			l := gtk.NewLabel(c.label)
+			l.AddCSSClass("quark-path-current")
+			l.SetEllipsize(pango.EllipsizeMiddle)
+			l.SetMaxWidthChars(28)
+			v.path.Append(l)
+		case c.depth < 0:
+			v.path.Append(gtk.NewLabel(c.label))
+		default:
+			b := gtk.NewButtonWithLabel(c.label)
+			b.AddCSSClass("flat")
+			if l, ok := b.Child().(*gtk.Label); ok {
+				l.SetEllipsize(pango.EllipsizeMiddle)
+				l.SetMaxWidthChars(16)
+			}
+			depth := c.depth
+			b.ConnectClicked(func() { v.b.GoToDepth(depth) })
+			v.path.Append(b)
+		}
+	}
+	v.titleStack.SetVisibleChildName("path")
+}
+
+func (v *filesView) update(st app.BrowserState) {
+	v.updatePath(st.Location)
+	v.addButton.SetVisible(st.Location.CanCreate())
 
 	// Rows.
 	uids := make([]string, len(st.Visible))

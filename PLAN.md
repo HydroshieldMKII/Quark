@@ -224,7 +224,7 @@ Re-check this table at every milestone; `govulncheck` runs in CI.
 | `github.com/benbjohnson/clock` | fake clock | **archived 2023** | Rejected → `testing/synctest` |
 | `gopkg.in/natefinch/lumberjack.v2` | log rotation | last activity 2024-08 | Rejected → own rotator |
 | `github.com/leonelquinteros/gotext` | gettext catalogues | v1.7.2, active 2026-09 | Decide in M5 (vs. GLib gettext) |
-| `fyne.io/systray` | tray icon (StatusNotifierItem over D-Bus) | v1.12.2, active 2026-09, Apache-2.0 | Use (M3b) |
+| `fyne.io/systray` | tray icon | v1.12.2, active, Apache-2.0, but a data race in its menu code | Rejected → own SNI on godbus |
 | `github.com/godbus/dbus/v5` | D-Bus (via systray; tray host detection) | v5.2.2, active 2026-09, BSD-2 | Use |
 | `github.com/getlantern/systray` | tray icon | inactive since 2024-07 | Rejected |
 | Tools: golangci-lint v2.14.0, gofumpt, staticcheck, govulncheck | lint/security | all active 2026-08..10 | Use |
@@ -559,6 +559,8 @@ pure D-Bus).
 5. Pause stops all transfers and re-queues the running ones; Resume continues them.
 Gate: works with the extension on and off; no GTK 3 in `ldd`; tray actions marshal to the GTK
 thread; quit leaves no CLI process.
+Status (2026-10-03): done. The protocol is implemented in-house on godbus (`internal/tray`);
+`fyne.io/systray` was dropped after the race detector found a data race in it.
 
 ### M5a — UI restyle (requested 2026-10-03)
 
@@ -569,6 +571,8 @@ screenshots (light/dark, wide/narrow) against the HIG.
 3. Clickable breadcrumb path bar instead of a subtitle.
 4. Refined list (selection, hover, icons), empty and loading states, transfers summary.
 Gate: screenshot review of every view in light/dark and at 400 px width; UI tests pass.
+Status (2026-10-03): items 1–3 done, plus full-color file icons and a compact layout below
+600 sp (folder name instead of the path bar, Size/Modified hidden). Remaining: transfers summary.
 
 ### M4 — Sharing and invitations (2 days)
 

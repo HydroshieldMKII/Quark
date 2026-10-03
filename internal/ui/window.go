@@ -65,6 +65,15 @@ type window struct {
 	openOnFinish map[string]string // transfer id -> local file to open
 	tray         *tray.Tray
 	quitting     bool
+	compact      bool // narrow window: simplified header and list
+}
+
+// setCompact switches every file view between the full and narrow layouts.
+func (w *window) setCompact(on bool) {
+	w.compact = on
+	for _, v := range w.files {
+		v.setCompact(on)
+	}
 }
 
 func newWindow(gapp *adw.Application, o Options) *window {
@@ -96,6 +105,8 @@ func newWindow(gapp *adw.Application, o Options) *window {
 	// Narrow windows collapse the sidebar (adaptive layout).
 	bp := adw.NewBreakpoint(adw.BreakpointConditionParse("max-width: 600sp"))
 	bp.AddSetter(w.split, "collapsed", true)
+	bp.ConnectApply(func() { w.setCompact(true) })
+	bp.ConnectUnapply(func() { w.setCompact(false) })
 	w.win.AddBreakpoint(bp)
 
 	w.win.ConnectCloseRequest(w.onCloseRequest)
@@ -136,6 +147,14 @@ func (w *window) buildMain() gtk.Widgetter {
 		w.sidebarList.Append(row)
 		w.sidebarRows[p.id] = row
 	}
+	// Transfers is activity, not a storage place: set it apart.
+	w.sidebarList.SetHeaderFunc(func(row, before *gtk.ListBoxRow) {
+		if before != nil && row.Name() == "transfers" {
+			row.SetHeader(gtk.NewSeparator(gtk.OrientationHorizontal))
+		} else {
+			row.SetHeader(nil)
+		}
+	})
 	w.sidebarList.ConnectRowSelected(func(row *gtk.ListBoxRow) {
 		if row != nil {
 			w.showSection(row.Name())
@@ -192,6 +211,8 @@ func (w *window) showSection(id string) {
 		return
 	}
 	w.current = id
+	// On narrow windows, show the content rather than staying on the sidebar.
+	defer w.split.SetShowContent(true)
 	if row := w.sidebarRows[id]; row != nil && w.sidebarList.SelectedRow() != row {
 		w.sidebarList.SelectRow(row)
 	}
@@ -206,6 +227,7 @@ func (w *window) showSection(id string) {
 	fv := w.files[id]
 	if fv == nil {
 		fv = newFilesView(w, p.section, T(p.title))
+		fv.setCompact(w.compact)
 		w.files[id] = fv
 		fv.b.Navigate(app.Root(p.section))
 	} else if fv.b.State().Err != nil {

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -162,10 +163,10 @@ func TestNavigateFilterAndUp(t *testing.T) {
 		}
 		v.activate(n)
 	})
-	eventually(t, "documents", func() bool { return v.title.Title() == "Documents" && !v.b.State().Loading })
+	eventually(t, "documents", func() bool { return pathLabels(v) == "My files › Documents" && !v.b.State().Loading })
 	onMain(func() {
-		if v.title.Subtitle() != "My files" || v.model.NItems() != 3 || !v.upButton.Visible() {
-			t.Errorf("title=%q subtitle=%q rows=%d", v.title.Title(), v.title.Subtitle(), v.model.NItems())
+		if v.titleStack.VisibleChildName() != "path" || v.model.NItems() != 3 || !v.upButton.Visible() {
+			t.Errorf("path=%q rows=%d", pathLabels(v), v.model.NItems())
 		}
 		v.search.SetSearchMode(true)
 		v.entry.SetText("pdf")
@@ -179,7 +180,9 @@ func TestNavigateFilterAndUp(t *testing.T) {
 		v.search.SetSearchMode(false) // clears the filter
 		v.b.Up()
 	})
-	eventually(t, "back at root", func() bool { return v.title.Title() == "My files" && v.model.NItems() == 7 })
+	eventually(t, "back at root", func() bool {
+		return v.titleStack.VisibleChildName() == "title" && v.title.Title() == "My files" && v.model.NItems() == 7
+	})
 }
 
 func TestCreateRenameTrashRestore(t *testing.T) {
@@ -348,10 +351,16 @@ func findEntry(w gtk.Widgetter) *gtk.Entry {
 }
 
 func TestAdaptiveLayout(t *testing.T) {
+	v := files(t, "my-files")
 	onMain(func() { testWin.win.SetDefaultSize(400, 700) })
 	eventually(t, "collapsed", func() bool { return testWin.split.Collapsed() })
+	onMain(func() {
+		if v.sizeCol.Visible() || v.modCol.Visible() {
+			t.Error("Size/Modified columns visible at phone width")
+		}
+	})
 	onMain(func() { testWin.win.SetDefaultSize(1100, 720) })
-	eventually(t, "expanded", func() bool { return !testWin.split.Collapsed() })
+	eventually(t, "expanded", func() bool { return !testWin.split.Collapsed() && v.sizeCol.Visible() })
 }
 
 func TestCloseHidesToTrayAndReopens(t *testing.T) {
@@ -380,6 +389,49 @@ func TestPauseFromWindow(t *testing.T) {
 		testWin.togglePause()
 		if testWin.q.Paused() {
 			t.Error("not resumed")
+		}
+	})
+}
+
+// pathLabels reads the breadcrumb bar as text.
+func pathLabels(v *filesView) string {
+	var parts []string
+	for c := v.path.FirstChild(); c != nil; c = gtk.BaseWidget(c).NextSibling() {
+		switch w := c.(type) {
+		case *gtk.Label:
+			parts = append(parts, w.Text())
+		case *gtk.Button:
+			parts = append(parts, w.Label())
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
+func TestBreadcrumbNavigation(t *testing.T) {
+	v := files(t, "my-files")
+	onMain(func() {
+		n, _ := find(v, "Photos")
+		v.activate(n)
+	})
+	eventually(t, "photos", func() bool { return pathLabels(v) == "My files › Photos" })
+	onMain(func() {
+		// Click the "My files" crumb.
+		b, ok := v.path.FirstChild().(*gtk.Button)
+		if !ok {
+			t.Fatal("first crumb is not a button")
+		}
+		b.Emit("clicked")
+	})
+	eventually(t, "back at root", func() bool { return v.titleStack.VisibleChildName() == "title" })
+	onMain(func() {
+		if !v.addButton.Visible() {
+			t.Error("+ menu hidden in My files")
+		}
+	})
+	tv := files(t, "trash")
+	onMain(func() {
+		if tv.addButton.Visible() {
+			t.Error("+ menu shown in the trash")
 		}
 	})
 }
