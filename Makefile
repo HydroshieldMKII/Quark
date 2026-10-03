@@ -110,6 +110,9 @@ install-user: build
 install-mount:
 	$(GO) build $(GOFLAGS_BUILD) -ldflags "-X main.version=$(VERSION)" -o bin/quark-mount ./cmd/quark-mount
 	install -Dm755 bin/quark-mount $(USER_PREFIX)/bin/quark-mount
+	install -Dm644 data/quark-mount.service $${XDG_CONFIG_HOME:-$$HOME/.config}/systemd/user/quark-mount.service
+	systemctl --user daemon-reload
+	@echo "Start the folder with: systemctl --user enable --now quark-mount   (mounts ~/ProtonDrive)"
 
 uninstall-user:
 	rm -f $(USER_PREFIX)/bin/quark $(USER_PREFIX)/share/applications/$(APP_ID).desktop \
