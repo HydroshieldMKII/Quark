@@ -571,14 +571,18 @@ screenshots (light/dark, wide/narrow) against the HIG.
 3. Clickable breadcrumb path bar instead of a subtitle.
 4. Refined list (selection, hover, icons), empty and loading states, transfers summary.
 Gate: screenshot review of every view in light/dark and at 400 px width; UI tests pass.
-Status (2026-10-03): items 1–3 done, plus full-color file icons and a compact layout below
-600 sp (folder name instead of the path bar, Size/Modified hidden). Remaining: transfers summary.
+Status (2026-10-03): done, plus full-color file icons and a compact layout below 600 sp
+(folder name instead of the path bar, Size/Modified hidden).
 
 ### M4 — Sharing and invitations (2 days)
 
 Share dialog (members, invite, roles, remove, leave), public link section (create/update/remove,
 password, expiry, copy), invitations view (accept/reject), badges in the list.
 Gate: fixtures-driven tests for every sharing command; dialogs reviewed against HIG.
+
+Status of M4 (2026-10-03): done — share dialog (link on/off, copy, access, expiry, password;
+people with permissions), invitations banner and review dialog, Leave. Link updates re-send
+password and expiry because the CLI replaces all link settings.
 
 ### M5 — Polish (2 days)
 
@@ -587,6 +591,9 @@ Preferences dialog, shortcuts dialog, about dialog, adaptive breakpoints, a11y l
 (SVG, symbolic variant), metainfo with screenshots, first-run onboarding when the binary is missing
 (explains download from proton.me and lets the user pick the file).
 Gate: `appstreamcli validate`, `desktop-file-validate`, HIG checklist in §5.3.
+
+Status of M5 (2026-10-03): French translation done (embedded .po catalogues, own loader, tests
+for completeness and format verbs); i18n backend decision: own loader, no gotext dependency.
 
 ### M6 — Packaging and release (1–2 days)
 
@@ -599,6 +606,10 @@ and **no** broad filesystem access (portals do the file picking). The CLI binary
 offers to copy it there from a user-picked file. RPM spec for Fedora. Tagged release, CHANGELOG,
 reproducible build notes.
 Gate: Flatpak builds in CI, runs on a clean Fedora 44 VM, login and a round trip work inside the sandbox.
+Status (2026-10-03): manifest `build/flatpak/org.example.Quark.yml`, installed per user with
+`make flatpak` (org.flatpak.Builder Flatpak, no sudo). The official CLI is bundled (MIT), pinned by
+SHA-512. Background/autostart via the Background portal. Open: CI job, vendored modules for a
+Flathub submission, homepage URL once published.
 
 ### v1.1 candidates
 

@@ -39,6 +39,10 @@ test strategy, methodology (GitHub Spec Kit) and milestones to follow.
 - UI smoke tests: `make test-ui` (isolated headless mutter via `build/headless.sh`)
 - Debug screenshots: `build/headless.sh -- ./bin/quark --demo --screenshot out.png
   --screenshot-section my-files[:open=Documents|:upload|:prefs|:signin] --screenshot-size 1100x720`
-- Real-account fixtures (asks first, sandboxed): `make fixtures`
+- Real-account fixtures (asks first, sandboxed): `make fixtures` · Real-CLI round trip: `make e2e`
+- Install for the desktop: `make flatpak` (per-user Flatpak, bundles the CLI). `make install-user`
+  is the non-Flatpak alternative for development; do not keep both installed.
+- Translations: mark strings with T/Tf/N/M, then `make i18n`; tests require every string in
+  `internal/i18n/po/fr.po`.
 - Module path and app ID are placeholders (`example.org/quark`, `org.example.Quark`) until the
   publishing namespace is chosen. Keep personal data (names, emails, home paths) out of the repo.
