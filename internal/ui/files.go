@@ -246,7 +246,7 @@ func (v *filesView) buildList() {
 			l.SetText("—")
 		}
 	}))
-	sizeCol.SetFixedWidth(110)
+	sizeCol.SetFixedWidth(textWidth(v.view, 40, formatSize(999_900_000), T("Size")))
 	sizeCol.SetResizable(true)
 	v.view.AppendColumn(sizeCol)
 	v.sizeCol = sizeCol
@@ -269,7 +269,10 @@ func (v *filesView) buildList() {
 	if v.section == drive.SectionTrash {
 		modCol.SetTitle(T("Trashed"))
 	}
-	modCol.SetFixedWidth(170)
+	// Wide enough for every date form, in the active language and text size.
+	modCol.SetFixedWidth(textWidth(v.view, 40,
+		Tf("Today %s", "00:00"), Tf("Yesterday %s", "00:00"), T("Wednesday")+" 00:00",
+		Tf("%d %s %d", 30, T("Sep"), 2026), T("Trashed")))
 	modCol.SetResizable(true)
 	v.view.AppendColumn(modCol)
 	v.modCol = modCol
@@ -974,4 +977,15 @@ func (v *filesView) showInvitations() {
 	view.SetContent(page)
 	d.SetChild(view)
 	d.Present(v.w.win)
+}
+
+// textWidth measures sample in w's font and adds padding, so columns follow
+// the user's text scaling instead of a fixed pixel size.
+func textWidth(w gtk.Widgetter, padding int, samples ...string) int {
+	widest := 0
+	for _, s := range samples {
+		width, _ := gtk.BaseWidget(w).CreatePangoLayout(s).PixelSize()
+		widest = max(widest, width)
+	}
+	return widest + padding
 }

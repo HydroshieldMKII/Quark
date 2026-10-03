@@ -23,22 +23,6 @@ finish-args:
   - --own-name=org.kde.*
   # No filesystem access: files are picked through the portal file chooser.
 modules:
-  - name: proton-drive-cli
-    buildsystem: simple
-    sources:
-      - type: file
-        url: https://proton.me/download/drive/cli/0.8.0/linux-x64/proton-drive
-        sha512: cf61c2688c45e1055d8add6221d9471a5a5b64bf3bcdb86460f5cb18414596cc4df3cdb6627c9097c94bec32a3c9915ada3211ef2ae5be33c46ebbc996ccaa28
-        dest-filename: proton-drive
-        only-arches: [x86_64]
-      - type: file
-        url: https://raw.githubusercontent.com/ProtonDriveApps/sdk/refs/tags/js/v0.21.1/LICENSE.md
-        sha256: 0ce1c7dc272b2b5f86de58045d87dbfdec582fdce352a4a41cc8c56bff51c6f5
-        dest-filename: proton-drive-cli-LICENSE.md
-    build-commands:
-      - install -Dm755 proton-drive /app/bin/proton-drive
-      - install -Dm644 proton-drive-cli-LICENSE.md /app/share/licenses/org.example.Quark/proton-drive-cli-LICENSE.md
-
   - name: quark
     buildsystem: simple
     build-options:
@@ -53,6 +37,7 @@ modules:
         path: ../..
         skip:
           - bin
+          - build
           - build-dir
           - .flatpak-builder
           - .git
@@ -65,3 +50,26 @@ modules:
       - install -Dm644 data/icons/hicolor/scalable/apps/org.example.Quark.svg /app/share/icons/hicolor/scalable/apps/org.example.Quark.svg
       - install -Dm644 data/icons/hicolor/symbolic/apps/org.example.Quark-symbolic.svg /app/share/icons/hicolor/symbolic/apps/org.example.Quark-symbolic.svg
       - install -Dm644 LICENSE /app/share/licenses/org.example.Quark/LICENSE
+
+  - name: proton-drive-cli
+    buildsystem: simple
+    # A Bun single-file executable carries its program after the ELF image:
+    # stripping it (flatpak-builder's default) leaves a bare Bun runtime.
+    build-options:
+      no-debuginfo: true
+      strip: false
+    sources:
+      - type: file
+        url: https://proton.me/download/drive/cli/0.8.0/linux-x64/proton-drive
+        sha512: cf61c2688c45e1055d8add6221d9471a5a5b64bf3bcdb86460f5cb18414596cc4df3cdb6627c9097c94bec32a3c9915ada3211ef2ae5be33c46ebbc996ccaa28
+        dest-filename: proton-drive
+        only-arches: [x86_64]
+      - type: file
+        url: https://raw.githubusercontent.com/ProtonDriveApps/sdk/refs/tags/js/v0.21.1/LICENSE.md
+        sha256: 0ce1c7dc272b2b5f86de58045d87dbfdec582fdce352a4a41cc8c56bff51c6f5
+        dest-filename: proton-drive-cli-LICENSE.md
+    build-commands:
+      - install -Dm755 proton-drive /app/bin/proton-drive
+      # Fail the build if the binary is not the CLI any more.
+      - /app/bin/proton-drive --version | grep -q 'cli-drive@0.8.0' 
+      - install -Dm644 proton-drive-cli-LICENSE.md /app/share/licenses/org.example.Quark/proton-drive-cli-LICENSE.md
