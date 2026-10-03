@@ -34,6 +34,8 @@ type filesView struct {
 	upButton   *gtk.Button
 	addButton  *gtk.MenuButton
 	emptyBtn   *gtk.Button
+	refreshing *adw.Spinner
+	errShown   bool // a refresh error was reported for the current listing
 	search     *gtk.SearchBar
 	entry      *gtk.SearchEntry
 	stack      *gtk.Stack
@@ -109,6 +111,12 @@ func newFilesView(w *window, section drive.Section, label string) *filesView {
 	viewButton.SetTooltipText(T("View Options"))
 	viewButton.SetMenuModel(viewMenu)
 	header.PackEnd(viewButton)
+
+	// A small spinner while a listing shown from the cache is being refreshed.
+	v.refreshing = adw.NewSpinner()
+	v.refreshing.SetVisible(false)
+	v.refreshing.SetTooltipText(T("Refreshing…"))
+	header.PackEnd(v.refreshing)
 
 	searchToggle := gtk.NewToggleButton()
 	searchToggle.SetIconName("system-search-symbolic")
@@ -489,6 +497,7 @@ func (v *filesView) update(st app.BrowserState) {
 		same = uids[i] == v.order[i] && nodes[uids[i]] == v.nodes[uids[i]]
 	}
 	if !same {
+		v.errShown = false
 		v.nodes, v.order = nodes, uids
 		v.index = make(map[string]uint, len(uids))
 		for i, u := range uids {
@@ -497,11 +506,19 @@ func (v *filesView) update(st app.BrowserState) {
 		v.model.Splice(0, v.model.NItems(), uids)
 	}
 
+	v.refreshing.SetVisible(st.Loading && len(st.Visible) > 0)
 	switch {
-	case st.Err != nil:
+	case st.Err != nil && len(st.Visible) == 0:
 		v.errPage.SetTitle(st.Err.Title)
 		v.errPage.SetDescription(st.Err.Detail)
 		v.stack.SetVisibleChildName("error")
+	case st.Err != nil:
+		// Keep the cached listing visible; the error is reported once.
+		if !v.errShown {
+			v.errShown = true
+			v.w.onToast(app.Toast{Text: st.Err.Title, Err: st.Err})
+		}
+		v.stack.SetVisibleChildName("list")
 	case st.Loading && len(st.Visible) == 0:
 		v.stack.SetVisibleChildName("loading")
 	case len(st.Visible) == 0:
@@ -578,12 +595,44 @@ func (v *filesView) installActions() {
 		for _, n := range v.selected() {
 			names = append(names, n.Name)
 		}
-		v.w.win.Clipboard().SetText(strings.Join(names, "\n"))
+		v.w.copyText(strings.Join(names, "\n"))
 	})
 	add("search", func() { v.search.SetSearchMode(true) })
 	add("share", func() {
 		if sel := v.selected(); len(sel) == 1 {
 			v.w.showShare(v.b.State().Location, sel[0])
+		}
+	})
+	add("copy-link", func() {
+		sel := v.selected()
+		if len(sel) != 1 {
+			return
+		}
+		n := sel[0]
+		v.w.a.LinkOf(v.b.State().Location, n, func(url string, ue *app.UserError) {
+			switch {
+			case ue != nil:
+				v.w.onToast(app.Toast{Text: ue.Title, Err: ue})
+			case url == "":
+				v.w.toastText(Tf("“%s” has no public link", n.Name))
+			default:
+				v.w.copyText(url)
+				v.w.toastText(T("Link copied"))
+			}
+		})
+	})
+	add("remove-link", func() {
+		sel := v.selected()
+		if len(sel) != 1 {
+			return
+		}
+		n, loc := sel[0], v.b.State().Location
+		confirm(v.w, Tf("Remove the link to “%s”?", n.Name), T("Anyone using this link will lose access. People you invited keep theirs."),
+			T("Remove Link"), func() { v.w.a.RemoveLinkOf(loc, n) })
+	})
+	add("properties", func() {
+		if sel := v.selected(); len(sel) == 1 {
+			v.showProperties(sel[0])
 		}
 	})
 	add("leave", func() {
@@ -623,6 +672,7 @@ func (v *filesView) installActions() {
 		"<Shift>Delete": "files.delete-forever", "F5": "files.refresh", "<Control>r": "files.refresh",
 		"<Alt>Up": "files.up", "BackSpace": "files.up", "<Control><Shift>n": "files.new-folder",
 		"<Control>f": "files.search", "<Control>u": "files.upload-files",
+		"<Control>i": "files.properties", "<Alt>Return": "files.properties", "<Control>c": "files.copy-name",
 	} {
 		keys.AddShortcut(gtk.NewShortcut(gtk.NewShortcutTriggerParseString(trigger), gtk.NewNamedAction(action)))
 	}
@@ -671,6 +721,10 @@ func (v *filesView) updateActions() {
 	deviceRoot := v.section == drive.SectionDevices && st.Location.IsRoot()
 	enable("share", len(sel) == 1 && !inTrash && !deviceRoot)
 	enable("leave", len(sel) == 1 && sharedRoot)
+	linked := len(sel) == 1 && sel[0].IsSharedByURL && !inTrash
+	enable("copy-link", linked)
+	enable("remove-link", linked)
+	enable("properties", len(sel) == 1)
 	if v.emptyBtn != nil {
 		v.emptyBtn.SetSensitive(st.Total > 0)
 	}
@@ -683,6 +737,9 @@ func (v *filesView) contextMenu() *gio.Menu {
 		del := gio.NewMenu()
 		del.Append(T("Delete Forever…"), "files.delete-forever")
 		m.AppendSection("", del)
+		props := gio.NewMenu()
+		props.Append(T("Properties"), "files.properties")
+		m.AppendSection("", props)
 		return m
 	}
 	open := gio.NewMenu()
@@ -691,6 +748,8 @@ func (v *filesView) contextMenu() *gio.Menu {
 	m.AppendSection("", open)
 	share := gio.NewMenu()
 	share.Append(T("Share…"), "files.share")
+	share.Append(T("Copy Link"), "files.copy-link")
+	share.Append(T("Remove Link…"), "files.remove-link")
 	if v.section == drive.SectionSharedWithMe {
 		share.Append(T("Leave…"), "files.leave")
 	}
@@ -702,6 +761,9 @@ func (v *filesView) contextMenu() *gio.Menu {
 	trash := gio.NewMenu()
 	trash.Append(T("Move to Trash"), "files.trash")
 	m.AppendSection("", trash)
+	props := gio.NewMenu()
+	props.Append(T("Properties"), "files.properties")
+	m.AppendSection("", props)
 	return m
 }
 
@@ -975,8 +1037,7 @@ func (v *filesView) showInvitations() {
 	view := adw.NewToolbarView()
 	view.AddTopBar(adw.NewHeaderBar())
 	view.SetContent(page)
-	d.SetChild(view)
-	d.Present(v.w.win)
+	v.w.presentDialog(d, view)
 }
 
 // textWidth measures sample in w's font and adds padding, so columns follow

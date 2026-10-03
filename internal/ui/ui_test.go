@@ -6,6 +6,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime"
@@ -23,6 +24,7 @@ import (
 	"example.org/quark/internal/app/demo"
 	"example.org/quark/internal/drive"
 	"example.org/quark/internal/jobs"
+	"example.org/quark/internal/pdcli"
 	"example.org/quark/internal/settings"
 )
 
@@ -505,4 +507,60 @@ func TestTransfersSummary(t *testing.T) {
 	if transfersSummary(nil, false) != "" {
 		t.Error("empty summary")
 	}
+}
+
+func TestToastsShowInsideOpenDialog(t *testing.T) {
+	v := files(t, "my-files")
+	var overlay *adw.ToastOverlay
+	onMain(func() {
+		d := adw.NewDialog()
+		d.SetTitle("Test")
+		testWin.presentDialog(d, gtk.NewLabel("content"))
+		overlay, _ = testWin.toastSinks[len(testWin.toastSinks)-1].(*adw.ToastOverlay)
+		if overlay == nil {
+			t.Fatal("dialog has no toast overlay")
+		}
+		testWin.toastText("hello from a dialog")
+	})
+	eventually(t, "toast in dialog", func() bool {
+		// A ToastOverlay with a toast has more than its child in the tree.
+		return overlay.FirstChild() != nil && gtk.BaseWidget(overlay.FirstChild()).NextSibling() != nil
+	})
+	onMain(func() {
+		testWin.win.VisibleDialog().ForceClose()
+	})
+	eventually(t, "sink popped", func() bool { return len(testWin.toastSinks) == 0 })
+	_ = v
+}
+
+func TestLinkActionsAndProperties(t *testing.T) {
+	v := files(t, "my-files")
+	// Earlier tests may have removed the demo link: make sure one exists.
+	n, _ := find(v, "Shared plans")
+	if _, err := backend.SetLink(context.Background(), drive.ByUID(n.UID), pdcli.LinkSpec{Role: drive.RoleViewer}); err != nil {
+		t.Fatal(err)
+	}
+	onMain(func() { v.b.Refresh() })
+	eventually(t, "link visible", func() bool { n, _ = find(v, "Shared plans"); return n.IsSharedByURL })
+	onMain(func() {
+		v.sel.SelectItem(v.index[n.UID], true)
+		v.updateActions()
+		if !v.actions["copy-link"].Enabled() || !v.actions["remove-link"].Enabled() || !v.actions["properties"].Enabled() {
+			t.Errorf("link actions disabled for a linked item: %+v", n)
+		}
+		v.actions["copy-link"].Activate(nil)
+	})
+	eventually(t, "link copied", func() bool { return strings.HasPrefix(testWin.lastCopied, "https://drive.proton.me/urls/") })
+	onMain(func() {
+		n, _ := find(v, "Notes.md")
+		v.sel.SelectItem(v.index[n.UID], true)
+		v.updateActions()
+		if v.actions["copy-link"].Enabled() {
+			t.Error("copy-link enabled for an unshared item")
+		}
+		v.showProperties(n)
+	})
+	eventually(t, "properties", func() bool { return testWin.win.VisibleDialog() != nil })
+	onMain(func() { testWin.win.VisibleDialog().ForceClose() })
+	eventually(t, "closed", func() bool { return testWin.win.VisibleDialog() == nil })
 }

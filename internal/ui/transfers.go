@@ -53,6 +53,11 @@ func newTransfersView(w *window) *transfersView {
 	v.list = gtk.NewListBox()
 	v.list.AddCSSClass("boxed-list")
 	v.list.SetSelectionMode(gtk.SelectionNone)
+	v.list.ConnectRowActivated(func(row *gtk.ListBoxRow) {
+		if r := v.rows[row.Name()]; r != nil {
+			v.open(r.last)
+		}
+	})
 	v.list.SetVAlign(gtk.AlignStart)
 	v.summary = gtk.NewLabel("")
 	v.summary.SetXAlign(0)
@@ -152,6 +157,7 @@ func iconButton(icon, tooltip string, onClick func()) *gtk.Button {
 func (v *transfersView) newRow(t jobs.Transfer) *transferRow {
 	id := t.ID
 	r := &transferRow{row: adw.NewActionRow()}
+	r.row.SetName(id)
 	r.row.SetTitle(t.Name)
 	r.row.SetTitleLines(1)
 	r.row.SetSubtitleLines(2)
@@ -188,6 +194,7 @@ func (v *transfersView) updateRow(r *transferRow, t jobs.Transfer) {
 	r.retry.SetVisible(t.Status == jobs.Failed || t.Status == jobs.Partial || t.Status == jobs.Cancelled)
 	r.remove.SetVisible(!t.Active())
 	r.folder.SetVisible(t.Kind == jobs.Download && (t.Status == jobs.Done || t.Status == jobs.Partial))
+	r.row.SetActivatable(t.Kind == jobs.Download && t.Status == jobs.Done)
 	if t.Status == jobs.Failed {
 		r.icon.AddCSSClass("error")
 	} else {
@@ -246,6 +253,18 @@ func transferSubtitle(t jobs.Transfer) string {
 		return T("Failed")
 	}
 	return ""
+}
+
+// open launches a finished download with its default application.
+func (v *transfersView) open(t jobs.Transfer) {
+	if t.Kind != jobs.Download || t.Status != jobs.Done {
+		return
+	}
+	if t.IsFolder {
+		v.showLocal(t)
+		return
+	}
+	v.w.launchFile(filepath.Join(t.Local, drive.LocalName(t.Name)))
 }
 
 func (v *transfersView) showLocal(t jobs.Transfer) {

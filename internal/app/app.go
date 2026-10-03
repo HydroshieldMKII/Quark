@@ -60,6 +60,8 @@ type Config struct {
 	NewBackend func(binary string, s settings.Settings) Backend
 	// Now is the clock; default time.Now.
 	Now func() time.Time
+	// CacheFile persists folder listings between runs; empty disables it.
+	CacheFile string
 }
 
 // App is the application state. Create it with New and call Start.
@@ -97,12 +99,33 @@ func New(cfg Config) *App {
 		cfg.Now = time.Now
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	return &App{
+	a := &App{
 		disp: cfg.Dispatcher, log: cfg.Logger, cfg: cfg, settings: cfg.Settings,
 		browsers: map[*Browser]struct{}{}, cache: newListCache(cfg.Now, 30*time.Second),
 		reads: newLimiter(maxReads), writes: newLimiter(maxWrites),
 		rootCtx: ctx, rootCancel: cancel,
 	}
+	if cfg.CacheFile != "" {
+		a.cache.load(cfg.CacheFile)
+	}
+	return a
+}
+
+// SaveCache persists the listing cache if it changed. Call it on shutdown
+// and after navigation settles; the write happens off the UI thread.
+func (a *App) SaveCache() {
+	data := a.cache.snapshot()
+	if data == nil {
+		return
+	}
+	c := a.cache
+	a.wg.Add(1)
+	go func() {
+		defer a.wg.Done()
+		if err := c.save(data); err != nil {
+			a.log.Warn("saving listing cache", "err", err)
+		}
+	}()
 }
 
 // Session returns the current session snapshot.
@@ -132,7 +155,6 @@ func (a *App) Start() {
 	if a.closed {
 		return
 	}
-	a.cache.clear()
 	a.setSession(Session{Phase: PhaseStarting})
 	bin, hints := a.cfg.FindBinary(a.settings.CLIPath)
 	if bin == "" {
@@ -284,6 +306,7 @@ func (a *App) saveSettings() {
 // CLI processes) up to timeout, and stops delivering callbacks. It reports
 // whether everything finished in time.
 func (a *App) Shutdown(timeout time.Duration) bool {
+	a.SaveCache()
 	a.closed = true
 	a.rootCancel()
 	done := make(chan struct{})

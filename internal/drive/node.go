@@ -53,6 +53,8 @@ type Node struct {
 	Author         string
 	AuthorVerified bool
 	SHA1           string
+	// RevisionUID identifies the active content; it changes with every new version.
+	RevisionUID string
 	// Degraded is true when the CLI reported decryption or integrity problems.
 	Degraded bool
 }

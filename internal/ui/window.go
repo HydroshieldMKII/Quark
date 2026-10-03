@@ -66,6 +66,43 @@ type window struct {
 	tray         *tray.Tray
 	quitting     bool
 	compact      bool // narrow window: simplified header and list
+	// lastCopied is the text last put on the clipboard (tests read it: the
+	// real clipboard needs a compositor data source).
+	lastCopied string
+	// toastSinks are the toast overlays of open dialogs, innermost last:
+	// toasts must appear above a modal dialog, not under its dimming.
+	toastSinks []toastSink
+}
+
+// copyText puts text on the clipboard.
+func (w *window) copyText(text string) {
+	w.lastCopied = text
+	w.win.Clipboard().SetText(text)
+}
+
+// toastSink is anything that can show a toast (ToastOverlay, PreferencesDialog).
+type toastSink interface{ AddToast(*adw.Toast) }
+
+func (w *window) pushToastSink(s toastSink) { w.toastSinks = append(w.toastSinks, s) }
+
+func (w *window) popToastSink(s toastSink) {
+	for i := len(w.toastSinks) - 1; i >= 0; i-- {
+		if w.toastSinks[i] == s {
+			w.toastSinks = append(w.toastSinks[:i], w.toastSinks[i+1:]...)
+			return
+		}
+	}
+}
+
+// presentDialog shows a dialog whose content gets its own toast overlay, so
+// toasts raised while it is open appear inside it.
+func (w *window) presentDialog(d *adw.Dialog, content gtk.Widgetter) {
+	overlay := adw.NewToastOverlay()
+	overlay.SetChild(content)
+	d.SetChild(overlay)
+	w.pushToastSink(overlay)
+	d.ConnectClosed(func() { w.popToastSink(overlay) })
+	d.Present(w.win)
 }
 
 // setCompact switches every file view between the full and narrow layouts.
@@ -263,6 +300,10 @@ func (w *window) onToast(t app.Toast) {
 		ue := t.Err
 		toast.SetButtonLabel(T("Details"))
 		toast.ConnectButtonClicked(func() { w.showError(ue) })
+	}
+	if n := len(w.toastSinks); n > 0 {
+		w.toastSinks[n-1].AddToast(toast)
+		return
 	}
 	w.toasts.AddToast(toast)
 }

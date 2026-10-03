@@ -110,10 +110,16 @@ func run() int {
 		}
 	}
 
+	cacheFile := ""
+	if !*demoMode {
+		if c, cerr := os.UserCacheDir(); cerr == nil {
+			cacheFile = filepath.Join(c, "quark", "listings.json")
+		}
+	}
 	loop := ui.MainLoop{}
 	a := app.New(app.Config{
 		Dispatcher: loop, Logger: logger, Settings: st, SaveSettings: save,
-		FindBinary: findBinary, NewBackend: newBackend,
+		FindBinary: findBinary, NewBackend: newBackend, CacheFile: cacheFile,
 	})
 	queuePath := ""
 	if statedir != "" {

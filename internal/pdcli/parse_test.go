@@ -42,7 +42,7 @@ func TestParseNodes(t *testing.T) {
 		ContentModified: time.Date(2026, 8, 30, 8, 0, 0, 0, time.UTC),
 		DirectRole:      drive.RoleAdmin, OwnerEmail: "owner@proton.me",
 		Author: "owner@proton.me", AuthorVerified: true,
-		SHA1: "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+		SHA1: "da39a3ee5e6b4b0d3255bfef95601890afd80709", RevisionUID: "rev1",
 	}
 	if f != want {
 		t.Errorf("file node:\n got %+v\nwant %+v", f, want)

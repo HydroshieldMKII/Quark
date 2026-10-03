@@ -186,7 +186,9 @@ func (w *window) showPreferences() {
 	general.Add(adv)
 
 	d.Add(general)
+	w.pushToastSink(d)
 	d.ConnectClosed(func() {
+		w.popToastSink(d)
 		w.a.UpdateSettings(st)
 		w.q.SetConcurrency(st.MaxTransfers)
 	})

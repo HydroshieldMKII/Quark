@@ -102,8 +102,13 @@ type SortSpec struct {
 // BrowserState is a snapshot for the view.
 type BrowserState struct {
 	Location Location
-	Loading  bool
-	Err      *UserError
+	// Loading is true while a listing is in flight. With Visible non-empty it
+	// means a cached listing is shown and being refreshed.
+	Loading bool
+	// Stale is true while the visible listing comes from an expired cache
+	// entry (possibly from a previous run) and has not been refreshed yet.
+	Stale bool
+	Err   *UserError
 	// Visible is the filtered and sorted listing.
 	Visible []drive.Node
 	// Total is the number of items before filtering.
@@ -118,6 +123,7 @@ type Browser struct {
 	loc       Location
 	nodes     []drive.Node
 	loading   bool
+	stale     bool
 	err       *UserError
 	filter    string
 	sort      SortSpec
@@ -148,7 +154,7 @@ func (b *Browser) Close() {
 // State returns the current snapshot.
 func (b *Browser) State() BrowserState {
 	vis := b.visible()
-	return BrowserState{Location: b.loc, Loading: b.loading, Err: b.err, Visible: vis, Total: len(b.nodes), Filter: b.filter, Sort: b.sort}
+	return BrowserState{Location: b.loc, Loading: b.loading, Stale: b.stale, Err: b.err, Visible: vis, Total: len(b.nodes), Filter: b.filter, Sort: b.sort}
 }
 
 func (b *Browser) notify() {
@@ -163,7 +169,7 @@ func (b *Browser) reset() {
 		b.cancel()
 	}
 	b.gen++
-	b.nodes, b.err, b.loading = nil, nil, false
+	b.nodes, b.err, b.loading, b.stale = nil, nil, false, false
 	b.notify()
 }
 
@@ -222,15 +228,16 @@ func (b *Browser) load(loc Location, force bool) {
 	b.loc = loc
 	b.err = nil
 	path := loc.ListPath()
-	if !force {
-		if nodes, ok := b.a.cache.get(path); ok {
-			b.nodes, b.loading = nodes, false
+	if nodes, fresh, ok := b.a.cache.get(path); ok {
+		// Show what we have at once; refresh unless it is fresh.
+		b.nodes, b.stale = nodes, !fresh
+		if fresh && !force {
+			b.loading = false
 			b.notify()
 			return
 		}
-	}
-	if changed {
-		b.nodes = nil
+	} else if changed {
+		b.nodes, b.stale = nil, false
 	}
 	b.loading = true
 	b.notify()
@@ -266,13 +273,15 @@ func (b *Browser) load(loc Location, force bool) {
 			return
 		}
 		if err != nil {
+			// Keep showing the cached listing (marked stale) next to the error.
 			b.err = Describe(err)
 			b.notify()
 			return
 		}
-		b.nodes = nodes
+		b.nodes, b.stale = nodes, false
 		b.a.cache.put(path, nodes)
 		b.notify()
+		b.a.SaveCache()
 	})
 }
 

@@ -137,6 +137,7 @@ func (w *wireNode) toNode() (drive.Node, error) {
 		n.StorageSize = *w.TotalStorageSize
 	}
 	if r := w.ActiveRevision; r != nil {
+		n.RevisionUID = r.UID
 		if r.ClaimedSize != nil && *r.ClaimedSize >= 0 {
 			n.Size, n.HasSize = *r.ClaimedSize, true
 		}

@@ -5,6 +5,7 @@ export PATH := $(dir $(GO)):$(HOME)/go/bin:$(PATH)
 APP_ID    := org.example.Quark
 PKG       := example.org/quark
 BIN       := bin/quark
+VERSION   ?= 0.1.0
 # Packages that need GTK (cgo + gtk4/libadwaita headers).
 UI_PKGS   := ./cmd/... ./internal/ui/...
 # Everything else must build and test without a display or GTK headers.
@@ -20,7 +21,7 @@ IN_SDK    := build/sdk-run.sh
 endif
 CORE_DIRS := $(shell $(GO) list -f '{{.Dir}}' $(CORE_PKGS) 2>/dev/null | sed "s|$$(pwd)/|./|")
 
-.PHONY: i18n install-user uninstall-user all build run test test-core test-ui cover lint fmt vuln fuzz soak fixtures e2e flatpak clean deps-check
+.PHONY: i18n install-mount install-user uninstall-user all build run test test-core test-ui cover lint fmt vuln fuzz soak fixtures e2e flatpak clean deps-check
 
 all: lint test
 
@@ -100,6 +101,11 @@ install-user: build
 	desktop-file-validate $(USER_PREFIX)/share/applications/$(APP_ID).desktop
 	-update-desktop-database -q $(USER_PREFIX)/share/applications
 	-gtk-update-icon-cache -q -f -t $(ICONS)
+
+# Installs the host-side mount tool (FUSE cannot run inside the Flatpak).
+install-mount:
+	$(GO) build $(GOFLAGS_BUILD) -ldflags "-X main.version=$(VERSION)" -o bin/quark-mount ./cmd/quark-mount
+	install -Dm755 bin/quark-mount $(USER_PREFIX)/bin/quark-mount
 
 uninstall-user:
 	rm -f $(USER_PREFIX)/bin/quark $(USER_PREFIX)/share/applications/$(APP_ID).desktop \

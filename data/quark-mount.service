@@ -1,0 +1,18 @@
+# User service that keeps Proton Drive mounted at ~/ProtonDrive.
+# Install:  mkdir -p ~/ProtonDrive ~/.config/systemd/user
+#           cp data/quark-mount.service ~/.config/systemd/user/
+#           systemctl --user enable --now quark-mount
+[Unit]
+Description=Proton Drive folder (Quark)
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/bin/mkdir -p %h/ProtonDrive
+ExecStart=%h/.local/bin/quark-mount %h/ProtonDrive
+ExecStop=/usr/bin/fusermount3 -u %h/ProtonDrive
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

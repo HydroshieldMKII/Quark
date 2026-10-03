@@ -227,6 +227,8 @@ Re-check this table at every milestone; `govulncheck` runs in CI.
 | `fyne.io/systray` | tray icon | v1.12.2, active, Apache-2.0, but a data race in its menu code | Rejected → own SNI on godbus |
 | `github.com/godbus/dbus/v5` | D-Bus (via systray; tray host detection) | v5.2.2, active 2026-09, BSD-2 | Use |
 | `github.com/getlantern/systray` | tray icon | inactive since 2024-07 | Rejected |
+| `github.com/hanwen/go-fuse/v2` | FUSE mount | v2.11.0, active 2026-10, BSD-3, 2.4k★ | Use (M7) |
+| `bazil.org/fuse` | FUSE mount | inactive since 2023-12 | Rejected |
 | Tools: golangci-lint v2.14.0, gofumpt, staticcheck, govulncheck | lint/security | all active 2026-08..10 | Use |
 | `github.com/KarpelesLab/weak`, `go4.org/unsafe/assume-no-moving-gc` | transitive (gotk4) | pulled by the bindings; `weak` fails Go's checkptr under `-race`, so UI tests disable checkptr only | Accept (no alternative to gotk4) |
 
@@ -610,6 +612,21 @@ Status (2026-10-03): manifest `build/flatpak/org.example.Quark.yml`, installed p
 `make flatpak` (org.flatpak.Builder Flatpak, no sudo). The official CLI is bundled (MIT), pinned by
 SHA-512. Background/autostart via the Background portal. Open: CI job, vendored modules for a
 Flathub submission, homepage URL once published.
+
+### M7 — Folder mount (FUSE), persistent listing cache, polish (done 2026-10-03)
+
+* `internal/fusefs` + `cmd/quark-mount`: Proton Drive as a folder with `hanwen/go-fuse` v2
+  (BSD-3, active). Listings cached per folder (TTL), full-file download on open into a size-bounded
+  content cache keyed by revision, writes staged locally and uploaded as a new version on close,
+  delete = trash, rename over existing = trash + rename, failed uploads kept under `unsynced/`.
+  Host-only (no FUSE inside Flatpak). Tests: 11 unit tests on a real mount over an in-memory
+  drive with content (`internal/testutil/memdrive`), plus a sandboxed round trip through the
+  real CLI (`e2e/mount_test.go`).
+* Listing cache persisted to `$XDG_CACHE_HOME/quark/listings.json`: folders render at once on
+  the next start (marked stale, refreshed in the background). Safety: name-addressed actions
+  (restore, delete forever, leave) re-list from the server before acting.
+* Polish: toasts inside open dialogs, Copy Link / Remove Link / Properties in the file list,
+  finished downloads open from the Transfers view.
 
 ### v1.1 candidates
 

@@ -1057,3 +1057,84 @@ msgstr "« %s » n’est pas une adresse électronique valide."
 
 msgid "“%s” is not marked as a program yet. Quark can allow it to run. Only do this for the official Proton Drive CLI downloaded from proton.me."
 msgstr "« %s » n’est pas encore marqué comme programme. Quark peut l’autoriser à s’exécuter. Ne le faites que pour le CLI officiel de Proton Drive téléchargé depuis proton.me."
+
+msgid "%s (%d bytes)"
+msgstr "%s (%d octets)"
+
+msgid "%s (%s)"
+msgstr "%s (%s)"
+
+msgid "%s encrypted, all versions"
+msgstr "%s chiffrés, toutes versions"
+
+msgid "Added"
+msgstr "Ajouté"
+
+msgid "Changed on Proton Drive"
+msgstr "Modifié sur Proton Drive"
+
+msgid "File"
+msgstr "Fichier"
+
+msgid "Folder"
+msgstr "Dossier"
+
+msgid "Identifier"
+msgstr "Identifiant"
+
+msgid "Integrity"
+msgstr "Intégrité"
+
+msgid "Link to “%s” removed"
+msgstr "Lien vers « %s » supprimé"
+
+msgid "Loading…"
+msgstr "Chargement…"
+
+msgid "Location"
+msgstr "Emplacement"
+
+msgid "Not shared"
+msgstr "Non partagé"
+
+msgid "Properties"
+msgstr "Propriétés"
+
+msgid "Refreshing…"
+msgstr "Actualisation…"
+
+msgid "Remove Link…"
+msgstr "Supprimer le lien…"
+
+msgid "Remove the link to “%s”?"
+msgstr "Supprimer le lien vers « %s » ?"
+
+msgid "SHA-1"
+msgstr "SHA-1"
+
+msgid "Shared with a link"
+msgstr "Partagé par lien"
+
+msgid "Shared with a link and with people"
+msgstr "Partagé par lien et avec des personnes"
+
+msgid "Shared with people"
+msgstr "Partagé avec des personnes"
+
+msgid "Sharing"
+msgstr "Partage"
+
+msgid "Some data could not be decrypted or verified"
+msgstr "Certaines données n’ont pas pu être déchiffrées ou vérifiées"
+
+msgid "Storage used"
+msgstr "Espace utilisé"
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Uploaded by"
+msgstr "Envoyé par"
+
+msgid "“%s” has no public link"
+msgstr "« %s » n’a pas de lien public"

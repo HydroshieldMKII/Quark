@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"slices"
 	"strings"
 	"testing"
@@ -155,6 +156,14 @@ func TestLeaveRefusesAmbiguousNames(t *testing.T) {
 	h := newHarness(t)
 	h.ready()
 	listing := []drive.Node{node("S1", "Team", drive.TypeFolder), node("S2", "Team", drive.TypeFolder), node("S3", "Solo", drive.TypeFolder)}
+	h.be.set(func(f *fakeBackend) {
+		f.list = func(_ context.Context, path string) ([]drive.Node, error) {
+			if path == "/shared-with-me" {
+				return listing, nil
+			}
+			return nil, nil
+		}
+	})
 	h.app.Leave(listing, listing[0])
 	h.loop.Drain()
 	if len(writes(h)) != 0 || h.lastToast().Err.Kind != "ambiguous" {
@@ -187,5 +196,52 @@ func TestInvitations(t *testing.T) {
 	}
 	if !strings.Contains(h.toasts[0].Text, "Shared with me") {
 		t.Errorf("toast = %q", h.toasts[0].Text)
+	}
+}
+
+func TestLinkOfRemoveLinkOfDetails(t *testing.T) {
+	h := newHarness(t)
+	h.ready()
+	n := node("F1", "plan.pdf", drive.TypeFile)
+	loc := Root(drive.SectionMyFiles)
+	h.be.set(func(f *fakeBackend) {
+		f.share = func(op, _ string, _ any) (*drive.Sharing, error) {
+			if op == "status" {
+				return shared(true), nil
+			}
+			return nil, nil
+		}
+	})
+	var got string
+	h.app.LinkOf(loc, n, func(u string, _ *UserError) { got = u })
+	h.until("link", func() bool { return got != "" })
+	if got != "https://drive.proton.me/urls/X#Y" {
+		t.Fatalf("url = %q", got)
+	}
+	h.be.set(func(f *fakeBackend) {
+		f.share = func(string, string, any) (*drive.Sharing, error) { return nil, nil }
+	})
+	called := false
+	h.app.LinkOf(loc, n, func(u string, _ *UserError) { called = true; got = u })
+	h.until("no link", func() bool { return called })
+	if got != "" {
+		t.Fatalf("url for unshared = %q", got)
+	}
+	h.app.RemoveLinkOf(loc, n)
+	h.until("removed", func() bool { return len(h.toasts) == 1 })
+	if w := writes(h); !slices.Equal(w, []string{"remove-url /my-files/F1"}) || h.lastToast().Err != nil {
+		t.Fatalf("writes = %q toast = %+v", w, h.lastToast())
+	}
+	var full drive.Node
+	h.app.Details(loc, n, func(d drive.Node, _ *UserError) { full = d })
+	h.until("details", func() bool { return full.UID != "" || true })
+	h.loop.Drain()
+	// Without a backend everything reports the missing CLI.
+	cold := newHarness(t)
+	errs := 0
+	cold.app.LinkOf(loc, n, func(string, *UserError) { errs++ })
+	cold.app.Details(loc, n, func(drive.Node, *UserError) { errs++ })
+	if errs != 2 {
+		t.Fatalf("cold errors = %d", errs)
 	}
 }

@@ -87,12 +87,11 @@ func (w *window) showShare(loc app.Location, n drive.Node) {
 	s.stack.AddNamed(s.errPage, "error")
 	s.stack.AddNamed(s.buildPage(), "page")
 	view.SetContent(s.stack)
-	s.d.SetChild(view)
 
 	s.v.OnChange(s.update)
 	s.update(s.v.State())
 	s.d.ConnectClosed(s.v.Close)
-	s.d.Present(w.win)
+	w.presentDialog(s.d, view)
 }
 
 func (s *shareDialog) buildPage() gtk.Widgetter {
@@ -115,7 +114,7 @@ func (s *shareDialog) buildPage() gtk.Widgetter {
 	copyBtn.AddCSSClass("flat")
 	copyBtn.SetVAlign(gtk.AlignCenter)
 	copyBtn.ConnectClicked(func() {
-		s.w.win.Clipboard().SetText(s.url)
+		s.w.copyText(s.url)
 		s.w.toastText(T("Link copied"))
 	})
 	s.urlRow.AddSuffix(copyBtn)

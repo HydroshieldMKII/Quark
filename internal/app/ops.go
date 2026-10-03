@@ -99,9 +99,34 @@ func (a *App) failToast(ue *UserError) {
 }
 
 // nameTaken reports whether name exists among the known children of loc.
+// It is only a fast pre-check: the CLI reports conflicts authoritatively.
 func (a *App) nameTaken(loc Location, name string) bool {
-	nodes, ok := a.cache.get(loc.ListPath())
+	nodes, _, ok := a.cache.get(loc.ListPath())
 	return ok && countName(nodes, name) > 0
+}
+
+// trashPathsFresh re-lists the trash and returns the paths of the selected
+// items, refusing any whose name is not unique there. The caller's listing
+// may be cached and stale; the trash is addressed by name, so only a fresh
+// listing is safe.
+func trashPathsFresh(ctx context.Context, be Backend, selected []drive.Node) ([]string, error) {
+	trash, err := be.List(ctx, drive.SectionTrash.Root())
+	if err != nil {
+		return nil, err
+	}
+	var paths []string
+	var amb []string
+	for _, n := range selected {
+		if countName(trash, n.Name) != 1 {
+			amb = append(amb, n.Name)
+			continue
+		}
+		paths = append(paths, drive.TrashPath(n.Name))
+	}
+	if len(amb) > 0 {
+		return nil, ambiguityError(amb)
+	}
+	return paths, nil
 }
 
 // CreateFolder creates a folder named name at loc.
@@ -262,8 +287,8 @@ func ambiguityError(names []string) *UserError {
 	}
 }
 
-// Restore restores selected items. listing is the full trash listing, used to
-// refuse names that are not unique.
+// Restore restores selected items. listing is the trash listing shown to the
+// user; names are re-checked against a fresh listing before acting.
 func (a *App) Restore(listing, selected []drive.Node) {
 	if len(selected) == 0 {
 		return
@@ -272,14 +297,13 @@ func (a *App) Restore(listing, selected []drive.Node) {
 		a.failToast(ambiguityError(amb))
 		return
 	}
-	paths := make([]string, len(selected))
-	for i, n := range selected {
-		paths[i] = drive.TrashPath(n.Name)
-	}
 	be := a.backend
 	var res []drive.ItemResult
 	a.mutate("restore", []string{drive.SectionTrash.Root()}, func(ctx context.Context) error {
-		var err error
+		paths, err := trashPathsFresh(ctx, be, selected)
+		if err != nil {
+			return err
+		}
 		res, err = be.Restore(ctx, paths...)
 		return err
 	}, func(ue *UserError) {
@@ -288,7 +312,8 @@ func (a *App) Restore(listing, selected []drive.Node) {
 	})
 }
 
-// DeleteForever permanently deletes selected trash items (the UI confirms first).
+// DeleteForever permanently deletes selected trash items (the UI confirms
+// first). Names are re-checked against a fresh listing before acting.
 func (a *App) DeleteForever(listing, selected []drive.Node) {
 	if len(selected) == 0 {
 		return
@@ -297,14 +322,13 @@ func (a *App) DeleteForever(listing, selected []drive.Node) {
 		a.failToast(ambiguityError(amb))
 		return
 	}
-	paths := make([]string, len(selected))
-	for i, n := range selected {
-		paths[i] = drive.TrashPath(n.Name)
-	}
 	be := a.backend
 	var res []drive.ItemResult
 	a.mutate("delete", []string{drive.SectionTrash.Root()}, func(ctx context.Context) error {
-		var err error
+		paths, err := trashPathsFresh(ctx, be, selected)
+		if err != nil {
+			return err
+		}
 		res, err = be.DeleteForever(ctx, paths...)
 		return err
 	}, func(ue *UserError) {

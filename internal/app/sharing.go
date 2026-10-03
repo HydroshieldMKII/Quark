@@ -255,6 +255,14 @@ func (a *App) Leave(listing []drive.Node, n drive.Node) {
 	root := Root(drive.SectionSharedWithMe)
 	be, path := a.backend, root.NodePath(n)
 	a.mutate("leave", []string{root.ListPath()}, func(ctx context.Context) error {
+		// The listing shown may be cached: re-check the name is still unique.
+		fresh, err := be.List(ctx, root.ListPath())
+		if err != nil {
+			return err
+		}
+		if countName(fresh, n.Name) != 1 {
+			return &UserError{Title: T("Cannot leave this item"), Detail: T("Several items shared with you have this name, and the Proton Drive CLI cannot tell them apart."), Kind: "ambiguous"}
+		}
 		return be.Leave(ctx, path)
 	}, func(ue *UserError) {
 		if ue != nil {
@@ -352,5 +360,69 @@ func (v *Invitations) answer(inv drive.Invitation, accept bool) {
 		}
 		v.loading = false
 		v.Refresh()
+	})
+}
+
+// LinkOf fetches the public link of node n. done receives an empty URL
+// when the node has no link.
+func (a *App) LinkOf(loc Location, n drive.Node, done func(url string, ue *UserError)) {
+	if a.backend == nil || a.closed {
+		done("", Describe(&pdcli.Error{Kind: pdcli.KindBinaryMissing}))
+		return
+	}
+	be, path := a.backend, loc.NodePath(n)
+	var s *drive.Sharing
+	a.spawn(a.rootCtx, "link-of", a.reads, func(ctx context.Context) error {
+		var err error
+		s, err = be.Sharing(ctx, path)
+		return err
+	}, func(err error) {
+		a.handleAuthLoss(err)
+		if ue := Describe(err); ue != nil {
+			done("", ue)
+			return
+		}
+		if s == nil || s.Link == nil {
+			done("", nil)
+			return
+		}
+		done(s.Link.URL, nil)
+	})
+}
+
+// RemoveLinkOf removes the public link of n (the UI confirms first).
+func (a *App) RemoveLinkOf(loc Location, n drive.Node) {
+	be, path := a.backend, loc.NodePath(n)
+	a.mutate("remove-url", []string{loc.ListPath(), drive.SectionSharedByMe.Root()}, func(ctx context.Context) error {
+		_, err := be.RemoveLink(ctx, path)
+		return err
+	}, func(ue *UserError) {
+		if ue != nil {
+			a.failToast(ue)
+			return
+		}
+		a.toast(Toast{Text: Tf("Link to “%s” removed", n.Name)})
+	})
+}
+
+// Details fetches the full metadata of n.
+func (a *App) Details(loc Location, n drive.Node, done func(drive.Node, *UserError)) {
+	if a.backend == nil || a.closed {
+		done(n, Describe(&pdcli.Error{Kind: pdcli.KindBinaryMissing}))
+		return
+	}
+	be, path := a.backend, loc.NodePath(n)
+	var full drive.Node
+	a.spawn(a.rootCtx, "details", a.reads, func(ctx context.Context) error {
+		var err error
+		full, err = be.Info(ctx, path)
+		return err
+	}, func(err error) {
+		a.handleAuthLoss(err)
+		if ue := Describe(err); ue != nil {
+			done(n, ue)
+			return
+		}
+		done(full, nil)
 	})
 }

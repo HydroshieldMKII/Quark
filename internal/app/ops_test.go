@@ -172,6 +172,14 @@ func TestRestoreAndDeleteRefuseAmbiguousNames(t *testing.T) {
 	h := newHarness(t)
 	h.ready()
 	listing := []drive.Node{node("1", "a.txt", drive.TypeFile), node("2", "a.txt", drive.TypeFile), node("3", "b.txt", drive.TypeFile)}
+	h.be.set(func(f *fakeBackend) {
+		f.list = func(_ context.Context, path string) ([]drive.Node, error) {
+			if path == "/trash" {
+				return listing, nil
+			}
+			return nil, nil
+		}
+	})
 	h.app.Restore(listing, listing[:1])
 	h.app.DeleteForever(listing, []drive.Node{listing[1], listing[2]})
 	h.loop.Drain()
@@ -194,6 +202,20 @@ func TestRestoreAndDeleteRefuseAmbiguousNames(t *testing.T) {
 	h.app.Restore(listing, nil)
 	h.app.DeleteForever(listing, nil)
 	h.loop.Drain()
+
+	// The displayed listing may be stale: a name that became ambiguous on the
+	// server since then is refused by the fresh check, and nothing is sent.
+	h.be.set(func(f *fakeBackend) {
+		f.list = func(context.Context, string) ([]drive.Node, error) {
+			return append(slices.Clone(listing), node("4", "b.txt", drive.TypeFile)), nil
+		}
+	})
+	before := len(writes(h))
+	h.app.DeleteForever(listing, listing[2:])
+	h.until("refused", func() bool { return len(h.toasts) == 5 })
+	if len(writes(h)) != before || h.lastToast().Err == nil || h.lastToast().Err.Kind != "ambiguous" {
+		t.Fatalf("stale listing led to a delete: writes=%q toast=%+v", writes(h), h.lastToast())
+	}
 }
 
 func TestEmptyTrash(t *testing.T) {

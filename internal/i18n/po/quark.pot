@@ -9,7 +9,7 @@ msgstr ""
 msgid " — %.0f%%"
 msgstr ""
 
-#: internal/ui/window.go:290
+#: internal/ui/window.go:331
 #, c-format
 msgid "%d"
 msgstr ""
@@ -20,65 +20,65 @@ msgid "%d %s"
 msgstr ""
 
 #: internal/app/format.go:31
-#: internal/ui/files.go:275
+#: internal/ui/files.go:283
 #, c-format
 msgid "%d %s %d"
 msgstr ""
 
-#: internal/ui/transfers.go:303
+#: internal/ui/transfers.go:322
 #, c-format
 msgid "%d done"
 msgid_plural "%d done"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/app/ops.go:175
-#: internal/ui/transfers.go:234
+#: internal/app/ops.go:200
+#: internal/ui/transfers.go:241
 #, c-format
 msgid "%d done, %d failed"
 msgstr ""
 
-#: internal/ui/transfers.go:300
+#: internal/ui/transfers.go:319
 #, c-format
 msgid "%d failed"
 msgid_plural "%d failed"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/ui/transfers.go:293
+#: internal/ui/transfers.go:312
 #, c-format
 msgid "%d in progress"
 msgid_plural "%d in progress"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/app/ops.go:237
+#: internal/app/ops.go:262
 #, c-format
 msgid "%d item could not be restored automatically; restore it from the trash"
 msgid_plural "%d items could not be restored automatically; restore them from the trash"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/ui/files.go:782
+#: internal/ui/files.go:844
 #, c-format
 msgid "%d item will be deleted forever. This cannot be undone."
 msgid_plural "All %d items will be deleted forever. This cannot be undone."
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/ui/transfers.go:226
+#: internal/ui/transfers.go:233
 #, c-format
 msgid "%d items, %s"
 msgstr ""
 
-#: internal/ui/transfers.go:290
+#: internal/ui/transfers.go:309
 #, c-format
 msgid "%d paused"
 msgid_plural "%d paused"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/ui/files.go:920
+#: internal/ui/files.go:982
 #, c-format
 msgid "%d pending invitation"
 msgid_plural "%d pending invitations"
@@ -99,7 +99,7 @@ msgid_plural "%d transfers in progress"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/ui/window.go:367
+#: internal/ui/window.go:408
 #, c-format
 msgid "%d transfer is still in progress and will be paused."
 msgid_plural "%d transfers are still in progress and will be paused."
@@ -113,36 +113,52 @@ msgid_plural "%d transfers paused"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/ui/transfers.go:296
+#: internal/ui/transfers.go:315
 #, c-format
 msgid "%d waiting"
 msgid_plural "%d waiting"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/ui/files.go:953
+#: internal/ui/properties.go:51
+#, c-format
+msgid "%s (%d bytes)"
+msgstr ""
+
+#: internal/ui/properties.go:47
+#, c-format
+msgid "%s (%s)"
+msgstr ""
+
+#: internal/ui/files.go:1015
+#: internal/ui/properties.go:79
 #, c-format
 msgid "%s (unverified)"
 msgstr ""
 
-#: internal/ui/transfers.go:207
+#: internal/ui/properties.go:54
+#, c-format
+msgid "%s encrypted, all versions"
+msgstr ""
+
+#: internal/ui/transfers.go:214
 #, c-format
 msgid "%s — retrying soon"
 msgstr ""
 
-#: internal/app/ops.go:360
+#: internal/app/ops.go:384
 msgid "A folder cannot be moved into itself"
 msgstr ""
 
-#: internal/ui/window.go:174
+#: internal/ui/window.go:211
 msgid "About Quark"
 msgstr ""
 
-#: internal/ui/files.go:958
+#: internal/ui/files.go:1020
 msgid "Accept"
 msgstr ""
 
-#: internal/ui/share.go:125
+#: internal/ui/share.go:124
 msgid "Access"
 msgstr ""
 
@@ -150,33 +166,38 @@ msgstr ""
 msgid "Add as new version"
 msgstr ""
 
-#: internal/ui/share.go:177
+#: internal/ui/share.go:176
 msgid "Add people by email"
+msgstr ""
+
+#: internal/ui/properties.go:62
+msgid "Added"
 msgstr ""
 
 #: internal/ui/dialogs.go:92
 msgid "Allow to Run"
 msgstr ""
 
-#: internal/ui/transfers.go:223
+#: internal/ui/transfers.go:230
 msgid "Already up to date"
 msgstr ""
 
 #: internal/app/errors.go:72
-#: internal/app/ops.go:118
-#: internal/app/ops.go:148
+#: internal/app/ops.go:143
+#: internal/app/ops.go:173
 msgid "An item with this name already exists here."
 msgstr ""
 
-#: internal/ui/prefs.go:203
+#: internal/ui/prefs.go:205
 msgid "An unofficial client for Proton Drive. Quark is not affiliated with or endorsed by Proton AG."
 msgstr ""
 
-#: internal/ui/share.go:221
+#: internal/ui/files.go:630
+#: internal/ui/share.go:220
 msgid "Anyone using this link will lose access. People you invited keep theirs."
 msgstr ""
 
-#: internal/ui/share.go:103
+#: internal/ui/share.go:102
 msgid "Anyone with the link can open this item."
 msgstr ""
 
@@ -211,16 +232,16 @@ msgstr ""
 #: internal/ui/dialogs.go:30
 #: internal/ui/dialogs.go:67
 #: internal/ui/session.go:109
-#: internal/ui/transfers.go:169
-#: internal/ui/window.go:370
+#: internal/ui/transfers.go:175
+#: internal/ui/window.go:411
 msgid "Cancel"
 msgstr ""
 
-#: internal/ui/transfers.go:238
+#: internal/ui/transfers.go:245
 msgid "Cancelled"
 msgstr ""
 
-#: internal/app/ops.go:114
+#: internal/app/ops.go:139
 msgid "Cannot create a folder here"
 msgstr ""
 
@@ -229,14 +250,15 @@ msgid "Cannot decrypt this item"
 msgstr ""
 
 #: internal/app/sharing.go:249
+#: internal/app/sharing.go:264
 msgid "Cannot leave this item"
 msgstr ""
 
-#: internal/app/browser.go:203
+#: internal/app/browser.go:209
 msgid "Cannot open this folder"
 msgstr ""
 
-#: internal/app/ops.go:342
+#: internal/app/ops.go:366
 msgid "Cannot put items here"
 msgstr ""
 
@@ -244,7 +266,7 @@ msgstr ""
 msgid "Cannot reach Proton"
 msgstr ""
 
-#: internal/ui/files.go:850
+#: internal/ui/files.go:912
 #, c-format
 msgid "Cannot read “%s”"
 msgstr ""
@@ -252,6 +274,10 @@ msgstr ""
 #: internal/ui/dialogs.go:105
 #, c-format
 msgid "Cannot use this file: %s"
+msgstr ""
+
+#: internal/ui/properties.go:61
+msgid "Changed on Proton Drive"
 msgstr ""
 
 #: internal/app/errors.go:64
@@ -286,7 +312,7 @@ msgstr ""
 msgid "Clear Finished"
 msgstr ""
 
-#: internal/ui/window.go:279
+#: internal/ui/window.go:320
 msgid "Close"
 msgstr ""
 
@@ -294,7 +320,7 @@ msgstr ""
 msgid "Computers"
 msgstr ""
 
-#: internal/ui/files.go:537
+#: internal/ui/files.go:554
 msgid "Computers synced with the Proton Drive desktop app appear here."
 msgstr ""
 
@@ -302,19 +328,20 @@ msgstr ""
 msgid "Continue in Your Browser"
 msgstr ""
 
-#: internal/app/ops.go:385
+#: internal/app/ops.go:409
 #, c-format
 msgid "Copied “%[2]s”"
 msgid_plural "Copied %[1]d items"
 msgstr[0] ""
 msgstr[1] ""
 
+#: internal/ui/files.go:751
 #: internal/ui/session.go:103
-#: internal/ui/share.go:114
+#: internal/ui/share.go:113
 msgid "Copy Link"
 msgstr ""
 
-#: internal/ui/files.go:700
+#: internal/ui/files.go:759
 msgid "Copy Name"
 msgstr ""
 
@@ -332,21 +359,21 @@ msgstr ""
 msgid "Could not open the browser"
 msgstr ""
 
-#: internal/ui/window.go:346
+#: internal/ui/window.go:387
 #, c-format
 msgid "Could not open the file: %s"
 msgstr ""
 
-#: internal/ui/transfers.go:259
+#: internal/ui/transfers.go:278
 msgid "Could not open the folder"
 msgstr ""
 
-#: internal/ui/files.go:729
+#: internal/ui/files.go:791
 #, c-format
 msgid "Could not prepare the file: %s"
 msgstr ""
 
-#: internal/ui/files.go:752
+#: internal/ui/files.go:814
 msgid "Create"
 msgstr ""
 
@@ -362,54 +389,55 @@ msgstr ""
 msgid "Dec"
 msgstr ""
 
-#: internal/ui/files.go:956
+#: internal/ui/files.go:1018
 msgid "Decline"
 msgstr ""
 
-#: internal/app/sharing.go:351
+#: internal/app/sharing.go:359
 #, c-format
 msgid "Declined “%s”"
 msgstr ""
 
-#: internal/ui/files.go:773
+#: internal/ui/files.go:835
 msgid "Delete Forever"
 msgstr ""
 
-#: internal/ui/files.go:684
+#: internal/ui/files.go:738
 msgid "Delete Forever…"
 msgstr ""
 
-#: internal/ui/prefs.go:222
+#: internal/ui/prefs.go:224
 msgid "Delete forever (in trash)"
 msgstr ""
 
-#: internal/ui/files.go:772
+#: internal/ui/files.go:834
 #, c-format
 msgid "Delete “%[2]s” Forever?"
 msgid_plural "Delete %[1]d Items Forever?"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/app/ops.go:311
+#: internal/app/ops.go:335
 #, c-format
 msgid "Deleted “%[2]s” forever"
 msgid_plural "Deleted %[1]d items forever"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/ui/window.go:193
+#: internal/ui/window.go:230
 msgid "Demo mode — sample data"
 msgstr ""
 
-#: internal/ui/files.go:102
+#: internal/ui/files.go:104
 msgid "Descending"
 msgstr ""
 
-#: internal/ui/window.go:264
+#: internal/ui/properties.go:91
+#: internal/ui/window.go:301
 msgid "Details"
 msgstr ""
 
-#: internal/ui/window.go:276
+#: internal/ui/window.go:317
 #, c-format
 msgid "Details: %s"
 msgstr ""
@@ -422,15 +450,15 @@ msgstr ""
 msgid "Detected automatically"
 msgstr ""
 
-#: internal/ui/files.go:881
+#: internal/ui/files.go:943
 msgid "Download To"
 msgstr ""
 
-#: internal/ui/window.go:334
+#: internal/ui/window.go:375
 msgid "Download failed"
 msgstr ""
 
-#: internal/ui/window.go:330
+#: internal/ui/window.go:371
 msgid "Download finished"
 msgstr ""
 
@@ -446,19 +474,19 @@ msgstr ""
 msgid "Downloading"
 msgstr ""
 
-#: internal/ui/files.go:906
+#: internal/ui/files.go:968
 #, c-format
 msgid "Downloading %d item"
 msgid_plural "Downloading %d items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/ui/transfers.go:220
+#: internal/ui/transfers.go:227
 #, c-format
 msgid "Downloading to %s"
 msgstr ""
 
-#: internal/ui/transfers.go:217
+#: internal/ui/transfers.go:224
 #, c-format
 msgid "Downloading to %s — %s of %s (%.0f%%)"
 msgstr ""
@@ -467,11 +495,11 @@ msgstr ""
 msgid "Downloads"
 msgstr ""
 
-#: internal/ui/files.go:690
+#: internal/ui/files.go:747
 msgid "Download…"
 msgstr ""
 
-#: internal/ui/files.go:541
+#: internal/ui/files.go:558
 msgid "Drop files here or use the upload button."
 msgstr ""
 
@@ -479,19 +507,19 @@ msgstr ""
 msgid "Each transfer uses about 125 MB of memory"
 msgstr ""
 
-#: internal/ui/files.go:783
+#: internal/ui/files.go:845
 msgid "Empty Trash"
 msgstr ""
 
-#: internal/ui/files.go:781
+#: internal/ui/files.go:843
 msgid "Empty Trash?"
 msgstr ""
 
-#: internal/ui/files.go:119
+#: internal/ui/files.go:127
 msgid "Empty Trash…"
 msgstr ""
 
-#: internal/app/ops.go:323
+#: internal/app/ops.go:347
 msgid "Emptying the trash; it may take a moment to finish"
 msgstr ""
 
@@ -503,11 +531,11 @@ msgstr ""
 msgid "Errors only"
 msgstr ""
 
-#: internal/ui/share.go:144
+#: internal/ui/share.go:143
 msgid "Expires"
 msgstr ""
 
-#: internal/ui/transfers.go:246
+#: internal/ui/transfers.go:253
 msgid "Failed"
 msgstr ""
 
@@ -515,20 +543,24 @@ msgstr ""
 msgid "Feb"
 msgstr ""
 
-#: internal/ui/prefs.go:217
+#: internal/ui/properties.go:43
+msgid "File"
+msgstr ""
+
+#: internal/ui/prefs.go:219
 msgid "Files"
 msgstr ""
 
-#: internal/ui/files.go:529
+#: internal/ui/files.go:546
 msgid "Files and folders other people share with you appear here."
 msgstr ""
 
-#: internal/ui/files.go:824
+#: internal/ui/files.go:886
 msgid "Files cannot be uploaded here"
 msgstr ""
 
-#: internal/ui/files.go:126
-#: internal/ui/prefs.go:225
+#: internal/ui/files.go:134
+#: internal/ui/prefs.go:227
 msgid "Filter by name"
 msgstr ""
 
@@ -536,7 +568,11 @@ msgstr ""
 msgid "Finish signing in on Proton's website. You can also open the link on another device."
 msgstr ""
 
-#: internal/ui/files.go:540
+#: internal/ui/properties.go:45
+msgid "Folder"
+msgstr ""
+
+#: internal/ui/files.go:557
 msgid "Folder Is Empty"
 msgstr ""
 
@@ -544,7 +580,7 @@ msgstr ""
 msgid "Folder too large"
 msgstr ""
 
-#: internal/app/ops.go:130
+#: internal/app/ops.go:155
 #, c-format
 msgid "Folder “%s” created"
 msgstr ""
@@ -558,13 +594,13 @@ msgstr ""
 msgid "Friday"
 msgstr ""
 
-#: internal/ui/files.go:955
+#: internal/ui/files.go:1017
 #, c-format
 msgid "From %s · %s"
 msgstr ""
 
 #: internal/ui/prefs.go:45
-#: internal/ui/prefs.go:227
+#: internal/ui/prefs.go:229
 msgid "General"
 msgstr ""
 
@@ -578,6 +614,10 @@ msgstr ""
 
 #: internal/ui/session.go:83
 msgid "Get the Latest CLI"
+msgstr ""
+
+#: internal/ui/properties.go:89
+msgid "Identifier"
 msgstr ""
 
 #: internal/ui/share.go:32
@@ -596,6 +636,10 @@ msgstr ""
 msgid "Information"
 msgstr ""
 
+#: internal/ui/properties.go:87
+msgid "Integrity"
+msgstr ""
+
 #: internal/app/sharing.go:32
 msgid "Invalid email address"
 msgstr ""
@@ -611,11 +655,11 @@ msgid_plural "%d invitations sent"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/ui/files.go:933
+#: internal/ui/files.go:995
 msgid "Invitations"
 msgstr ""
 
-#: internal/ui/share.go:280
+#: internal/ui/share.go:279
 #, c-format
 msgid "Invited · %s"
 msgstr ""
@@ -628,7 +672,7 @@ msgstr ""
 msgid "Item not found"
 msgstr ""
 
-#: internal/app/ops.go:144
+#: internal/app/ops.go:169
 msgid "Items in the trash cannot be renamed"
 msgstr ""
 
@@ -664,32 +708,33 @@ msgstr ""
 msgid "Keep transfers going when the window is closed"
 msgstr ""
 
-#: internal/ui/window.go:173
+#: internal/ui/window.go:210
 msgid "Keyboard Shortcuts"
 msgstr ""
 
-#: internal/ui/prefs.go:228
+#: internal/ui/prefs.go:230
 msgid "Keyboard shortcuts"
 msgstr ""
 
-#: internal/ui/files.go:596
+#: internal/ui/files.go:645
 msgid "Leave"
 msgstr ""
 
-#: internal/ui/files.go:595
+#: internal/ui/files.go:644
 #, c-format
 msgid "Leave “%s”?"
 msgstr ""
 
-#: internal/ui/files.go:695
+#: internal/ui/files.go:754
 msgid "Leave…"
 msgstr ""
 
-#: internal/ui/share.go:110
+#: internal/ui/share.go:109
 msgid "Link"
 msgstr ""
 
-#: internal/ui/share.go:119
+#: internal/ui/files.go:620
+#: internal/ui/share.go:118
 msgid "Link copied"
 msgstr ""
 
@@ -701,11 +746,24 @@ msgstr ""
 msgid "Link removed"
 msgstr ""
 
+#: internal/app/sharing.go:404
+#, c-format
+msgid "Link to “%s” removed"
+msgstr ""
+
 #: internal/app/sharing.go:217
 msgid "Link updated"
 msgstr ""
 
-#: internal/ui/window.go:182
+#: internal/ui/properties.go:91
+msgid "Loading…"
+msgstr ""
+
+#: internal/ui/properties.go:56
+msgid "Location"
+msgstr ""
+
+#: internal/ui/window.go:219
 msgid "Main Menu"
 msgstr ""
 
@@ -726,8 +784,9 @@ msgstr ""
 msgid "Merge"
 msgstr ""
 
-#: internal/ui/files.go:99
-#: internal/ui/files.go:254
+#: internal/ui/files.go:101
+#: internal/ui/files.go:262
+#: internal/ui/properties.go:59
 msgid "Modified"
 msgstr ""
 
@@ -735,22 +794,22 @@ msgstr ""
 msgid "Monday"
 msgstr ""
 
-#: internal/ui/files.go:703
+#: internal/ui/files.go:762
 msgid "Move to Trash"
 msgstr ""
 
-#: internal/ui/prefs.go:221
+#: internal/ui/prefs.go:223
 msgid "Move to trash"
 msgstr ""
 
-#: internal/app/ops.go:383
+#: internal/app/ops.go:407
 #, c-format
 msgid "Moved “%[2]s”"
 msgid_plural "Moved %[1]d items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/app/ops.go:202
+#: internal/app/ops.go:227
 #, c-format
 msgid "Moved “%[2]s” to the trash"
 msgid_plural "Moved %[1]d items to the trash"
@@ -765,14 +824,15 @@ msgstr ""
 msgid "My files"
 msgstr ""
 
-#: internal/ui/files.go:97
-#: internal/ui/files.go:201
+#: internal/ui/files.go:99
+#: internal/ui/files.go:209
+#: internal/ui/properties.go:42
 msgid "Name"
 msgstr ""
 
 #: internal/app/errors.go:72
-#: internal/app/ops.go:118
-#: internal/app/ops.go:148
+#: internal/app/ops.go:143
+#: internal/app/ops.go:173
 msgid "Name already in use"
 msgstr ""
 
@@ -792,31 +852,31 @@ msgstr ""
 msgid "Never"
 msgstr ""
 
-#: internal/ui/files.go:91
+#: internal/ui/files.go:93
 msgid "New"
 msgstr ""
 
-#: internal/ui/files.go:752
+#: internal/ui/files.go:814
 msgid "New Folder"
 msgstr ""
 
-#: internal/ui/files.go:84
+#: internal/ui/files.go:86
 msgid "New Folder…"
 msgstr ""
 
-#: internal/ui/prefs.go:218
+#: internal/ui/prefs.go:220
 msgid "New folder"
 msgstr ""
 
-#: internal/ui/files.go:536
+#: internal/ui/files.go:553
 msgid "No Computers"
 msgstr ""
 
-#: internal/ui/files.go:520
+#: internal/ui/files.go:537
 msgid "No Matches"
 msgstr ""
 
-#: internal/ui/transfers.go:77
+#: internal/ui/transfers.go:82
 msgid "No Transfers"
 msgstr ""
 
@@ -824,7 +884,7 @@ msgstr ""
 msgid "No active transfers"
 msgstr ""
 
-#: internal/ui/files.go:724
+#: internal/ui/files.go:786
 msgid "No cache directory available"
 msgstr ""
 
@@ -832,7 +892,7 @@ msgstr ""
 msgid "No email address"
 msgstr ""
 
-#: internal/ui/files.go:521
+#: internal/ui/files.go:538
 msgid "No item in this folder matches your filter."
 msgstr ""
 
@@ -844,11 +904,15 @@ msgstr ""
 msgid "Not every item could be processed. You can try the failed ones again."
 msgstr ""
 
-#: internal/ui/files.go:528
+#: internal/ui/properties.go:74
+msgid "Not shared"
+msgstr ""
+
+#: internal/ui/files.go:545
 msgid "Nothing Shared With You"
 msgstr ""
 
-#: internal/ui/files.go:532
+#: internal/ui/files.go:549
 msgid "Nothing Shared Yet"
 msgstr ""
 
@@ -860,16 +924,16 @@ msgstr ""
 msgid "Oct"
 msgstr ""
 
-#: internal/ui/share.go:313
+#: internal/ui/share.go:312
 #, c-format
 msgid "On %s"
 msgstr ""
 
-#: internal/ui/files.go:937
+#: internal/ui/files.go:999
 msgid "Only accept invitations from people you know: the sender's address is shown as verified by Proton when possible."
 msgstr ""
 
-#: internal/ui/files.go:689
+#: internal/ui/files.go:746
 msgid "Open"
 msgstr ""
 
@@ -881,43 +945,49 @@ msgstr ""
 msgid "Open Quark"
 msgstr ""
 
-#: internal/ui/files.go:741
+#: internal/ui/files.go:803
 #, c-format
 msgid "Opening “%s”…"
 msgstr ""
 
-#: internal/ui/files.go:79
+#: internal/ui/files.go:81
 msgid "Parent Folder"
 msgstr ""
 
-#: internal/ui/prefs.go:223
+#: internal/ui/prefs.go:225
 msgid "Parent folder"
 msgstr ""
 
-#: internal/ui/share.go:164
+#: internal/ui/share.go:163
 msgid "Password (optional)"
 msgstr ""
 
 #: internal/tray/tray.go:194
-#: internal/ui/transfers.go:134
+#: internal/ui/transfers.go:139
 msgid "Pause Transfers"
 msgstr ""
 
-#: internal/ui/share.go:175
+#: internal/ui/share.go:174
 msgid "People"
 msgstr ""
 
-#: internal/ui/share.go:187
+#: internal/ui/share.go:186
 msgid "Permission"
 msgstr ""
 
-#: internal/ui/prefs.go:228
-#: internal/ui/window.go:172
+#: internal/ui/prefs.go:230
+#: internal/ui/window.go:209
 msgid "Preferences"
 msgstr ""
 
 #: internal/ui/prefs.go:51
 msgid "Program"
+msgstr ""
+
+#: internal/ui/files.go:741
+#: internal/ui/files.go:765
+#: internal/ui/properties.go:18
+msgid "Properties"
 msgstr ""
 
 #: internal/ui/prefs.go:49
@@ -948,11 +1018,11 @@ msgstr ""
 msgid "Proton is busy"
 msgstr ""
 
-#: internal/ui/share.go:102
+#: internal/ui/share.go:101
 msgid "Public Link"
 msgstr ""
 
-#: internal/ui/prefs.go:201
+#: internal/ui/prefs.go:203
 msgid "Quark contributors"
 msgstr ""
 
@@ -972,7 +1042,7 @@ msgstr ""
 msgid "Quark sent an invalid request. Details were written to the log."
 msgstr ""
 
-#: internal/ui/prefs.go:204
+#: internal/ui/prefs.go:206
 msgid "Quark works through the official Proton Drive CLI. Official CLI builds send crash reports and usage metrics to Proton."
 msgstr ""
 
@@ -981,38 +1051,52 @@ msgid "Quark works through the official Proton Drive command-line tool. Download
 msgstr ""
 
 #: internal/tray/tray.go:215
-#: internal/ui/prefs.go:228
+#: internal/ui/prefs.go:230
 msgid "Quit"
 msgstr ""
 
-#: internal/ui/files.go:105
-#: internal/ui/prefs.go:224
+#: internal/ui/files.go:107
+#: internal/ui/prefs.go:226
 msgid "Refresh"
 msgstr ""
 
-#: internal/ui/share.go:289
+#: internal/ui/files.go:118
+msgid "Refreshing…"
+msgstr ""
+
+#: internal/ui/share.go:288
 msgid "Remove"
 msgstr ""
 
-#: internal/ui/share.go:289
+#: internal/ui/share.go:288
 #, c-format
 msgid "Remove %s?"
 msgstr ""
 
-#: internal/ui/share.go:285
+#: internal/ui/share.go:284
 msgid "Remove Access"
 msgstr ""
 
-#: internal/ui/transfers.go:170
+#: internal/ui/transfers.go:176
 msgid "Remove From List"
 msgstr ""
 
-#: internal/ui/share.go:222
+#: internal/ui/files.go:631
+#: internal/ui/share.go:221
 msgid "Remove Link"
 msgstr ""
 
-#: internal/ui/share.go:221
+#: internal/ui/files.go:752
+msgid "Remove Link…"
+msgstr ""
+
+#: internal/ui/share.go:220
 msgid "Remove the Link?"
+msgstr ""
+
+#: internal/ui/files.go:630
+#, c-format
+msgid "Remove the link to “%s”?"
 msgstr ""
 
 #: internal/app/sharing.go:181
@@ -1020,13 +1104,13 @@ msgstr ""
 msgid "Removed %s"
 msgstr ""
 
-#: internal/ui/files.go:763
-#: internal/ui/files.go:763
-#: internal/ui/prefs.go:220
+#: internal/ui/files.go:825
+#: internal/ui/files.go:825
+#: internal/ui/prefs.go:222
 msgid "Rename"
 msgstr ""
 
-#: internal/ui/files.go:699
+#: internal/ui/files.go:758
 msgid "Rename…"
 msgstr ""
 
@@ -1046,23 +1130,23 @@ msgstr ""
 msgid "Replace (moves the old folder to the trash)"
 msgstr ""
 
-#: internal/ui/files.go:682
+#: internal/ui/files.go:736
 msgid "Restore"
 msgstr ""
 
-#: internal/app/ops.go:346
+#: internal/app/ops.go:370
 msgid "Restore items before moving them"
 msgstr ""
 
-#: internal/app/browser.go:199
+#: internal/app/browser.go:205
 msgid "Restore the folder to browse its contents"
 msgstr ""
 
-#: internal/app/ops.go:241
+#: internal/app/ops.go:266
 msgid "Restored"
 msgstr ""
 
-#: internal/app/ops.go:287
+#: internal/app/ops.go:311
 #, c-format
 msgid "Restored “%[2]s”"
 msgid_plural "Restored %[1]d items"
@@ -1070,19 +1154,19 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: internal/tray/tray.go:196
-#: internal/ui/transfers.go:131
+#: internal/ui/transfers.go:136
 msgid "Resume Transfers"
 msgstr ""
 
-#: internal/ui/transfers.go:168
+#: internal/ui/transfers.go:174
 msgid "Retry"
 msgstr ""
 
-#: internal/ui/transfers.go:209
+#: internal/ui/transfers.go:216
 msgid "Retrying soon"
 msgstr ""
 
-#: internal/ui/files.go:916
+#: internal/ui/files.go:978
 msgid "Review"
 msgstr ""
 
@@ -1090,35 +1174,40 @@ msgstr ""
 msgid "Run in Background"
 msgstr ""
 
+#: internal/ui/properties.go:84
+msgid "SHA-1"
+msgstr ""
+
 #: internal/app/format.go:39
 msgid "Saturday"
 msgstr ""
 
-#: internal/ui/transfers.go:231
+#: internal/ui/transfers.go:238
 #, c-format
 msgid "Saved in %s"
 msgstr ""
 
-#: internal/ui/files.go:115
+#: internal/ui/files.go:123
 msgid "Search This Folder"
 msgstr ""
 
 #: internal/app/format.go:43
-#: internal/ui/files.go:275
+#: internal/ui/files.go:283
 msgid "Sep"
 msgstr ""
 
-#: internal/app/ops.go:259
+#: internal/app/ops.go:284
 #, c-format
 msgid "Several items in the trash are named “%s”. The Proton Drive CLI cannot tell them apart; use the Proton Drive website for these."
 msgstr ""
 
-#: internal/app/browser.go:204
+#: internal/app/browser.go:210
 #: internal/app/sharing.go:250
+#: internal/app/sharing.go:264
 msgid "Several items shared with you have this name, and the Proton Drive CLI cannot tell them apart."
 msgstr ""
 
-#: internal/ui/share.go:105
+#: internal/ui/share.go:104
 msgid "Share With a Link"
 msgstr ""
 
@@ -1127,7 +1216,7 @@ msgstr ""
 msgid "Share “%s”"
 msgstr ""
 
-#: internal/ui/files.go:211
+#: internal/ui/files.go:219
 msgid "Shared"
 msgstr ""
 
@@ -1135,20 +1224,39 @@ msgstr ""
 msgid "Shared by me"
 msgstr ""
 
+#: internal/ui/properties.go:70
+msgid "Shared with a link"
+msgstr ""
+
+#: internal/ui/properties.go:68
+msgid "Shared with a link and with people"
+msgstr ""
+
 #: internal/ui/window.go:38
 msgid "Shared with me"
 msgstr ""
 
-#: internal/ui/files.go:693
+#: internal/ui/properties.go:72
+msgid "Shared with people"
+msgstr ""
+
+#: internal/ui/files.go:750
 msgid "Share…"
 msgstr ""
 
-#: internal/ui/files.go:868
-#: internal/ui/files.go:907
+#: internal/ui/properties.go:68
+#: internal/ui/properties.go:70
+#: internal/ui/properties.go:72
+#: internal/ui/properties.go:74
+msgid "Sharing"
+msgstr ""
+
+#: internal/ui/files.go:930
+#: internal/ui/files.go:969
 msgid "Show"
 msgstr ""
 
-#: internal/ui/transfers.go:167
+#: internal/ui/transfers.go:173
 msgid "Show in Folder"
 msgstr ""
 
@@ -1156,15 +1264,15 @@ msgstr ""
 msgid "Sign In…"
 msgstr ""
 
-#: internal/ui/window.go:371
+#: internal/ui/window.go:412
 msgid "Sign Out"
 msgstr ""
 
-#: internal/ui/window.go:369
+#: internal/ui/window.go:410
 msgid "Sign Out?"
 msgstr ""
 
-#: internal/ui/window.go:177
+#: internal/ui/window.go:214
 msgid "Sign Out…"
 msgstr ""
 
@@ -1184,9 +1292,10 @@ msgstr ""
 msgid "Simultaneous Transfers"
 msgstr ""
 
-#: internal/ui/files.go:98
-#: internal/ui/files.go:232
-#: internal/ui/files.go:249
+#: internal/ui/files.go:100
+#: internal/ui/files.go:240
+#: internal/ui/files.go:257
+#: internal/ui/properties.go:51
 msgid "Size"
 msgstr ""
 
@@ -1197,12 +1306,16 @@ msgstr ""
 msgid "Skip"
 msgstr ""
 
-#: internal/app/ops.go:258
+#: internal/ui/properties.go:87
+msgid "Some data could not be decrypted or verified"
+msgstr ""
+
+#: internal/app/ops.go:283
 msgid "Some items cannot be handled by name"
 msgstr ""
 
 #: internal/app/errors.go:78
-#: internal/ui/transfers.go:236
+#: internal/ui/transfers.go:243
 msgid "Some items failed"
 msgstr ""
 
@@ -1213,7 +1326,7 @@ msgstr ""
 msgid "Something went wrong"
 msgstr ""
 
-#: internal/ui/files.go:100
+#: internal/ui/files.go:102
 msgid "Sort By"
 msgstr ""
 
@@ -1223,6 +1336,10 @@ msgstr ""
 
 #: internal/ui/prefs.go:164
 msgid "Start hidden in the top bar when you log in"
+msgstr ""
+
+#: internal/ui/properties.go:54
+msgid "Storage used"
 msgstr ""
 
 #: internal/ui/prefs.go:123
@@ -1265,11 +1382,11 @@ msgstr ""
 msgid "The name is too long."
 msgstr ""
 
-#: internal/ui/share.go:289
+#: internal/ui/share.go:288
 msgid "They will no longer have access to this item."
 msgstr ""
 
-#: internal/ui/files.go:773
+#: internal/ui/files.go:835
 msgid "This cannot be undone."
 msgstr ""
 
@@ -1290,7 +1407,7 @@ msgid "Thursday"
 msgstr ""
 
 #: internal/app/format.go:23
-#: internal/ui/files.go:274
+#: internal/ui/files.go:282
 #, c-format
 msgid "Today %s"
 msgstr ""
@@ -1301,7 +1418,7 @@ msgstr ""
 
 #: internal/ui/prefs.go:86
 #: internal/ui/transfers.go:45
-#: internal/ui/transfers.go:87
+#: internal/ui/transfers.go:92
 #: internal/ui/window.go:42
 msgid "Transfers"
 msgstr ""
@@ -1314,12 +1431,13 @@ msgstr ""
 msgid "Trash"
 msgstr ""
 
-#: internal/ui/files.go:524
+#: internal/ui/files.go:541
 msgid "Trash Is Empty"
 msgstr ""
 
-#: internal/ui/files.go:270
-#: internal/ui/files.go:275
+#: internal/ui/files.go:278
+#: internal/ui/files.go:283
+#: internal/ui/properties.go:64
 msgid "Trashed"
 msgstr ""
 
@@ -1327,7 +1445,7 @@ msgstr ""
 msgid "Troubleshooting"
 msgstr ""
 
-#: internal/ui/files.go:156
+#: internal/ui/files.go:164
 #: internal/ui/session.go:124
 #: internal/ui/share.go:86
 msgid "Try Again"
@@ -1341,7 +1459,11 @@ msgstr ""
 msgid "Tuesday"
 msgstr ""
 
-#: internal/app/ops.go:179
+#: internal/ui/properties.go:49
+msgid "Type"
+msgstr ""
+
+#: internal/app/ops.go:204
 msgid "Undo"
 msgstr ""
 
@@ -1349,36 +1471,36 @@ msgstr ""
 msgid "Unexpected answer from the Proton Drive CLI"
 msgstr ""
 
-#: internal/ui/files.go:752
+#: internal/ui/files.go:814
 msgid "Untitled Folder"
 msgstr ""
 
-#: internal/ui/files.go:803
+#: internal/ui/files.go:865
 msgid "Upload Files"
 msgstr ""
 
 #: internal/tray/tray.go:201
-#: internal/ui/files.go:86
+#: internal/ui/files.go:88
 msgid "Upload Files…"
 msgstr ""
 
-#: internal/ui/files.go:794
+#: internal/ui/files.go:856
 msgid "Upload Folder"
 msgstr ""
 
-#: internal/ui/files.go:87
+#: internal/ui/files.go:89
 msgid "Upload Folder…"
 msgstr ""
 
-#: internal/ui/window.go:332
+#: internal/ui/window.go:373
 msgid "Upload failed"
 msgstr ""
 
-#: internal/ui/prefs.go:219
+#: internal/ui/prefs.go:221
 msgid "Upload files"
 msgstr ""
 
-#: internal/ui/window.go:328
+#: internal/ui/window.go:369
 msgid "Upload finished"
 msgstr ""
 
@@ -1390,7 +1512,11 @@ msgstr ""
 msgid "Uploaded Folders"
 msgstr ""
 
-#: internal/ui/transfers.go:229
+#: internal/ui/properties.go:81
+msgid "Uploaded by"
+msgstr ""
+
+#: internal/ui/transfers.go:236
 #, c-format
 msgid "Uploaded to %s"
 msgstr ""
@@ -1399,19 +1525,19 @@ msgstr ""
 msgid "Uploading"
 msgstr ""
 
-#: internal/ui/files.go:867
+#: internal/ui/files.go:929
 #, c-format
 msgid "Uploading %d item"
 msgid_plural "Uploading %d items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: internal/ui/transfers.go:214
+#: internal/ui/transfers.go:221
 #, c-format
 msgid "Uploading to %s"
 msgstr ""
 
-#: internal/ui/transfers.go:78
+#: internal/ui/transfers.go:83
 msgid "Uploads and downloads appear here."
 msgstr ""
 
@@ -1419,11 +1545,11 @@ msgstr ""
 msgid "Verification failed"
 msgstr ""
 
-#: internal/ui/files.go:109
+#: internal/ui/files.go:111
 msgid "View Options"
 msgstr ""
 
-#: internal/ui/transfers.go:211
+#: internal/ui/transfers.go:218
 msgid "Waiting"
 msgstr ""
 
@@ -1432,7 +1558,7 @@ msgid "Warnings"
 msgstr ""
 
 #: internal/app/format.go:38
-#: internal/ui/files.go:274
+#: internal/ui/files.go:282
 msgid "Wednesday"
 msgstr ""
 
@@ -1449,7 +1575,7 @@ msgid "Written to ~/.local/state/proton-drive-cli"
 msgstr ""
 
 #: internal/app/format.go:25
-#: internal/ui/files.go:274
+#: internal/ui/files.go:282
 #, c-format
 msgid "Yesterday %s"
 msgstr ""
@@ -1458,16 +1584,16 @@ msgstr ""
 msgid "You are signed out"
 msgstr ""
 
-#: internal/app/sharing.go:264
+#: internal/app/sharing.go:272
 #, c-format
 msgid "You left “%s”"
 msgstr ""
 
-#: internal/ui/files.go:595
+#: internal/ui/files.go:644
 msgid "You will lose access until someone shares it with you again."
 msgstr ""
 
-#: internal/ui/window.go:365
+#: internal/ui/window.go:406
 msgid "You will need to sign in again to use Quark. Files on your computer are not affected."
 msgstr ""
 
@@ -1488,9 +1614,14 @@ msgstr ""
 msgid "waiting"
 msgstr ""
 
-#: internal/app/sharing.go:349
+#: internal/app/sharing.go:357
 #, c-format
 msgid "“%s” added to Shared with me"
+msgstr ""
+
+#: internal/ui/files.go:617
+#, c-format
+msgid "“%s” has no public link"
 msgstr ""
 
 #: internal/app/sharing.go:32

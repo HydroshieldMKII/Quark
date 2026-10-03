@@ -103,7 +103,7 @@ func newSessionPages(w *window) *sessionPages {
 	s.copyLink = gtk.NewButtonWithLabel(T("Copy Link"))
 	s.copyLink.AddCSSClass("flat")
 	s.copyLink.ConnectClicked(func() {
-		w.win.Clipboard().SetText(s.loginURL)
+		w.copyText(s.loginURL)
 		w.toastText(T("Sign-in link copied"))
 	})
 	cancel := gtk.NewButtonWithLabel(T("Cancel"))
