@@ -144,10 +144,10 @@ func (c *contentCache) fetch(ctx context.Context, m *Mounted, n drive.Node, remo
 		delete(c.fetching, n.UID)
 		c.mu.Unlock()
 	}()
-	if err := m.acquire(ctx, m.reads); err != nil {
+	if err := m.acquire(ctx, m.xfers); err != nil {
 		return "", syscall.EINTR
 	}
-	defer m.release(m.reads)
+	defer m.release(m.xfers)
 	tmp, err := os.MkdirTemp(filepath.Join(c.dir, "tmp"), "dl-")
 	if err != nil {
 		return "", syscall.EIO

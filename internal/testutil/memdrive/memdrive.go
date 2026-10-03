@@ -31,6 +31,7 @@ type Drive struct {
 	seq      int
 	now      func() time.Time
 	latency  time.Duration
+	cmdLat   map[string]time.Duration
 	fail     error
 	calls    map[string]int
 }
@@ -40,6 +41,16 @@ func (d *Drive) SetLatency(l time.Duration) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.latency = l
+}
+
+// SetCommandLatency adds a delay to one command only ("list", "download", ...).
+func (d *Drive) SetCommandLatency(cmd string, l time.Duration) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.cmdLat == nil {
+		d.cmdLat = map[string]time.Duration{}
+	}
+	d.cmdLat[cmd] = l
 }
 
 // SetFail makes every call return err (nil restores normal behaviour).
@@ -73,7 +84,7 @@ func New(now func() time.Time) *Drive {
 
 func (d *Drive) begin(ctx context.Context, cmd string) error {
 	d.mu.Lock()
-	latency := d.latency
+	latency := d.latency + d.cmdLat[cmd]
 	d.mu.Unlock()
 	if latency > 0 {
 		select {

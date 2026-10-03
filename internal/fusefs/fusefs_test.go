@@ -89,8 +89,15 @@ func mountFixture(t *testing.T, opts Options, seed func(f *fixture)) *fixture {
 	}
 	f.m = m
 	t.Cleanup(func() {
-		if err := f.m.Unmount(); err != nil {
-			t.Errorf("unmount: %v", err)
+		var err error
+		for range 50 { // programs of the test may still be closing files
+			if err = f.m.Unmount(); err == nil {
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		if err != nil {
+			t.Fatalf("unmount: %v (run: fusermount3 -uz %s)", err, f.mnt)
 		}
 		f.m.Wait()
 		if entries, _ := os.ReadDir(f.mnt); len(entries) != 0 {

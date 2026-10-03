@@ -194,9 +194,21 @@ func (r *ExecRunner) Run(ctx context.Context, req Request) (Result, error) {
 				Message: fmt.Sprintf("the Proton Drive CLI was killed by signal %s", ws.Signal()),
 			}
 		}
-		return res, classify(command, res.ExitCode, res.Stderr)
+		e := classify(command, res.ExitCode, res.Stderr)
+		if e.Kind == KindCrash {
+			// The CLI logs to stdout: the reason of a crash is usually there.
+			e.Stderr += "\n[stdout tail] " + tailOf(res.Stdout, 1500)
+		}
+		return res, e
 	}
 	return res, nil
+}
+
+func tailOf(b []byte, n int) string {
+	if len(b) > n {
+		b = b[len(b)-n:]
+	}
+	return strings.TrimSpace(stripANSI(string(b)))
 }
 
 func mergeEnv(base, over map[string]string) map[string]string {

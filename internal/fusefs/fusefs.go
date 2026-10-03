@@ -60,8 +60,11 @@ type Options struct {
 	ListTTL time.Duration
 	// CacheLimit bounds the content cache in bytes (default 1 GiB).
 	CacheLimit int64
-	// MaxReads and MaxWrites cap concurrent CLI processes (default 2 and 1).
-	MaxReads, MaxWrites int
+	// MaxReads caps concurrent listing/metadata CLI processes, MaxTransfers
+	// concurrent downloads, MaxWrites uploads and changes (defaults 2, 2, 1).
+	// Listings never wait behind downloads, so a program resolving paths
+	// stays responsive while files are being fetched.
+	MaxReads, MaxTransfers, MaxWrites int
 	// SyncInterval is how often pinned content is checked (default 1 min).
 	SyncInterval time.Duration
 	// RetryBase is the first retry delay of a failed upload (default 5 s);
@@ -87,6 +90,9 @@ func (o *Options) defaults() {
 	if o.MaxReads <= 0 {
 		o.MaxReads = 2
 	}
+	if o.MaxTransfers <= 0 {
+		o.MaxTransfers = 2
+	}
 	if o.MaxWrites <= 0 {
 		o.MaxWrites = 1
 	}
@@ -110,6 +116,7 @@ type Mounted struct {
 	pending *pendingStore
 	syncer  *syncer
 	reads   chan struct{}
+	xfers   chan struct{}
 	writes  chan struct{}
 	log     *slog.Logger
 	root    *node
@@ -163,7 +170,7 @@ func Mount(mountpoint string, o Options) (*Mounted, error) {
 	}
 	m := &Mounted{
 		opts: o, pins: pins, pending: pending, log: o.Logger,
-		reads: make(chan struct{}, o.MaxReads), writes: make(chan struct{}, o.MaxWrites),
+		reads: make(chan struct{}, o.MaxReads), xfers: make(chan struct{}, o.MaxTransfers), writes: make(chan struct{}, o.MaxWrites),
 		uid: uint32(os.Getuid()), gid: uint32(os.Getgid()), //nolint:gosec // ids are small
 		inodes: map[string]*node{}, protected: map[string]bool{},
 	}
@@ -338,6 +345,14 @@ type node struct {
 	path    string
 	entries []drive.Node
 	listed  time.Time
+	// loadedSaved is set once the saved listing was tried; refreshing
+	// while a background refresh runs.
+	loadedSaved bool
+	refreshing  bool
+	// changed is set by local changes until the next successful listing.
+	changed bool
+	// seenRev is the revision whose size the kernel last got from us.
+	seenRev string
 	// writers counts open handles that may change the content; while > 0,
 	// size comes from the staging file.
 	writers int
@@ -376,54 +391,115 @@ func (n *node) childPath(c drive.Node) string {
 	return drive.ByUID(c.UID)
 }
 
-// list returns the children, refreshing the listing after the TTL.
-func (n *node) list(ctx context.Context, force bool) ([]drive.Node, syscall.Errno) {
+// listMode says how fresh a listing must be.
+type listMode int
+
+const (
+	// listQuick answers from the last listing (in memory or saved on disk)
+	// at once and refreshes in the background when it is stale: path
+	// resolution must never wait for the CLI.
+	listQuick listMode = iota
+	// listFresh re-lists when the TTL has passed; for Readdir and changes.
+	listFresh
+	// listForce always re-lists.
+	listForce
+)
+
+// list returns the children.
+func (n *node) list(ctx context.Context, mode listMode) ([]drive.Node, syscall.Errno) {
 	n.mu.Lock()
-	fresh := !force && !n.listed.IsZero() && time.Since(n.listed) < n.m.opts.ListTTL
-	entries := n.entries
+	if n.entries == nil && !n.loadedSaved {
+		// A listing saved by an earlier run makes the folder usable at once.
+		n.loadedSaved = true
+		if saved := n.m.loadListing(n.uid); saved != nil {
+			n.entries = saved
+		}
+	}
+	fresh := !n.listed.IsZero() && time.Since(n.listed) < n.m.opts.ListTTL
+	entries, changed := n.entries, n.changed
 	n.mu.Unlock()
-	if fresh {
+	if mode != listForce && fresh {
 		return entries, 0
 	}
+	// A listing that a local change made wrong is not served to anyone.
+	if mode == listQuick && entries != nil && !changed {
+		n.refreshInBackground()
+		return entries, 0
+	}
+	return n.refresh(ctx, entries)
+}
+
+// refreshInBackground starts one refresh of a stale listing.
+func (n *node) refreshInBackground() {
+	n.mu.Lock()
+	if n.refreshing {
+		n.mu.Unlock()
+		return
+	}
+	n.refreshing = true
+	n.mu.Unlock()
+	n.m.syncer.wg.Add(1)
+	go func() {
+		defer n.m.syncer.wg.Done()
+		defer func() {
+			n.mu.Lock()
+			n.refreshing = false
+			n.mu.Unlock()
+		}()
+		n.mu.Lock()
+		entries := n.entries
+		n.mu.Unlock()
+		_, _ = n.refresh(n.m.syncer.ctx, entries)
+	}()
+}
+
+// refresh lists through the CLI; offline, the last listing is better than
+// an error: it is what the cache and the journal can still serve.
+func (n *node) refresh(ctx context.Context, entries []drive.Node) ([]drive.Node, syscall.Errno) {
 	if err := n.m.acquire(ctx, n.m.reads); err != nil {
 		return nil, syscall.EINTR
 	}
 	defer n.m.release(n.m.reads)
 	nodes, err := n.m.opts.Backend.List(ctx, n.path)
 	if err != nil {
-		n.m.log.Warn("list failed", "err", err)
-		// Offline, the last listing is better than an error: it is what
-		// the cache and the journal can still serve.
-		if entries == nil && retryable(err) {
-			entries = n.m.loadListing(n.uid)
+		var pe *pdcli.Error
+		if errors.As(err, &pe) && pe.Kind == pdcli.KindCrash {
+			n.m.log.Warn("list failed", "err", err, "stderr", trimTo(pe.Stderr, 600))
+		} else {
+			n.m.log.Warn("list failed", "err", err)
 		}
 		if entries != nil && retryable(err) {
-			n.mu.Lock()
-			if n.entries == nil {
-				n.entries = entries
-			}
-			n.mu.Unlock()
 			return entries, 0
 		}
 		return nil, toErrno(err)
 	}
 	n.mu.Lock()
-	n.entries, n.listed = nodes, time.Now()
+	n.entries, n.listed, n.changed = nodes, time.Now(), false
 	n.mu.Unlock()
 	n.m.saveListing(n.uid, nodes)
 	n.m.log.Debug("listed", "uid", n.uid, "entries", len(nodes))
 	return nodes, 0
 }
 
+// invalidate marks the listing as changed by a local operation: the next
+// lookup must re-list.
 func (n *node) invalidate() {
 	n.mu.Lock()
 	n.listed = time.Time{}
+	n.changed = true
 	n.mu.Unlock()
 }
 
+func trimTo(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "…"
+}
+
 // find returns the child whose local name is name (first match, as the CLI does).
-func (n *node) find(ctx context.Context, name string) (drive.Node, syscall.Errno) {
-	entries, errno := n.list(ctx, false)
+func (n *node) find(ctx context.Context, name string, mode listMode) (drive.Node, syscall.Errno) {
+	entries, errno := n.list(ctx, mode)
 	if errno != 0 {
 		return drive.Node{}, errno
 	}
@@ -472,6 +548,7 @@ func (n *node) fillAttr(out *fuse.Attr) {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	a := n.attr
+	n.seenRev = a.RevisionUID
 	out.Uid, out.Gid = n.m.uid, n.m.gid
 	if n.isDir() {
 		out.Mode = syscall.S_IFDIR | 0o700
@@ -513,7 +590,7 @@ func (n *node) Lookup(ctx context.Context, name string, out *fuse.EntryOut) (*fs
 	if !n.isDir() {
 		return nil, syscall.ENOTDIR
 	}
-	c, errno := n.find(ctx, name)
+	c, errno := n.find(ctx, name, listQuick)
 	if errno != 0 {
 		return nil, errno
 	}
@@ -524,7 +601,7 @@ func (n *node) Lookup(ctx context.Context, name string, out *fuse.EntryOut) (*fs
 
 // Readdir implements fs.NodeReaddirer.
 func (n *node) Readdir(ctx context.Context) (fs.DirStream, syscall.Errno) {
-	entries, errno := n.list(ctx, false)
+	entries, errno := n.list(ctx, listFresh)
 	if errno != 0 {
 		return nil, errno
 	}
@@ -668,7 +745,7 @@ func (n *node) trashChild(ctx context.Context, name string, dir bool) syscall.Er
 	if n.m.opts.ReadOnly {
 		return syscall.EROFS
 	}
-	c, errno := n.find(ctx, name)
+	c, errno := n.find(ctx, name, listFresh)
 	if errno != 0 {
 		return errno
 	}
@@ -681,7 +758,7 @@ func (n *node) trashChild(ctx context.Context, name string, dir bool) syscall.Er
 	if dir {
 		// POSIX: only empty directories are removed this way.
 		if ch := n.GetChild(name); ch != nil {
-			if entries, e := ch.Operations().(*node).list(ctx, true); e != 0 || len(entries) > 0 {
+			if entries, e := ch.Operations().(*node).list(ctx, listForce); e != 0 || len(entries) > 0 {
 				if e != 0 {
 					return e
 				}
@@ -733,7 +810,7 @@ func (n *node) Rename(ctx context.Context, name string, newParent fs.InodeEmbedd
 	if !ok || !target.isDir() {
 		return syscall.ENOTDIR
 	}
-	c, errno := n.find(ctx, name)
+	c, errno := n.find(ctx, name, listFresh)
 	if errno != 0 {
 		return errno
 	}
@@ -746,7 +823,7 @@ func (n *node) Rename(ctx context.Context, name string, newParent fs.InodeEmbedd
 	}
 	defer n.m.release(n.m.writes)
 	be := n.m.opts.Backend
-	if existing, e := target.find(ctx, newName); e == 0 && existing.UID != c.UID {
+	if existing, e := target.find(ctx, newName, listFresh); e == 0 && existing.UID != c.UID {
 		if _, err := be.Trash(ctx, target.childPath(existing)); err != nil {
 			return toErrno(err)
 		}

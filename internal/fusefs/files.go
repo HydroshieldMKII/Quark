@@ -50,8 +50,18 @@ func (n *node) Open(ctx context.Context, flags uint32) (fs.FileHandle, uint32, s
 	if wantWrite && n.m.opts.ReadOnly {
 		return nil, 0, syscall.EROFS
 	}
+	// Lookups answer from a possibly stale listing; a program that opens
+	// the file wants the current version, so check with the server first
+	// (listings never wait behind downloads).
+	n.freshen(ctx)
 	n.mu.Lock()
 	attr := n.attr
+	// If the kernel still holds the size of an older revision, serve this
+	// open with direct I/O so reads are not cut at that size.
+	var readFlags uint32
+	if n.seenRev != attr.RevisionUID {
+		readFlags = fuse.FOPEN_DIRECT_IO
+	}
 	n.mu.Unlock()
 	n.m.log.Debug("open", "uid", attr.UID, "rev", attr.RevisionUID, "write", wantWrite)
 	if !wantWrite {
@@ -73,7 +83,7 @@ func (n *node) Open(ctx context.Context, flags uint32) (fs.FileHandle, uint32, s
 		n.m.cache.pin(attr.UID, 1)
 		// No FOPEN_KEEP_CACHE: the kernel drops its page cache on each open,
 		// so a new version uploaded elsewhere is never served from stale pages.
-		return &handle{n: n, f: f, pinned: true}, 0, 0
+		return &handle{n: n, f: f, pinned: true}, readFlags, 0
 	}
 	if errno := n.writable(); errno != 0 {
 		return nil, 0, errno
@@ -155,7 +165,7 @@ func (n *node) Create(ctx context.Context, name string, _ uint32, _ uint32, out 
 	if !n.isDir() {
 		return nil, nil, 0, syscall.ENOTDIR
 	}
-	if _, errno := n.find(ctx, name); errno == 0 {
+	if _, errno := n.find(ctx, name, listFresh); errno == 0 {
 		return nil, nil, 0, syscall.EEXIST
 	}
 	stage, err := os.MkdirTemp(filepath.Join(n.m.opts.CacheDir, "stage"), "c-")
@@ -205,10 +215,35 @@ func (n *node) Create(ctx context.Context, name string, _ uint32, _ uint32, out 
 	return inode, h, fuse.FOPEN_DIRECT_IO, 0
 }
 
+// freshen refreshes the node's metadata from a fresh listing of its parent
+// when the current one is stale. Offline it keeps what it has.
+func (n *node) freshen(ctx context.Context) {
+	_, p := n.Parent()
+	if p == nil {
+		return
+	}
+	pn := p.Operations().(*node)
+	entries, errno := pn.list(ctx, listFresh)
+	if errno != 0 {
+		return
+	}
+	for _, c := range entries {
+		if c.UID == n.uid {
+			n.mu.Lock()
+			if n.writers == 0 {
+				n.attr = c
+			}
+			n.path = pn.childPath(c)
+			n.mu.Unlock()
+			return
+		}
+	}
+}
+
 // refind re-lists and finds a child by name.
 func (n *node) refind(ctx context.Context, name string) (drive.Node, syscall.Errno) {
 	n.invalidate()
-	return n.find(ctx, name)
+	return n.find(ctx, name, listForce)
 }
 
 // Read implements fs.FileReader.

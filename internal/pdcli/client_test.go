@@ -384,3 +384,53 @@ func TestClientArgvInvariants(t *testing.T) {
 		}
 	}
 }
+
+// collidingRunner fails the first n runs the way the CLI does when two
+// processes open its SQLite cache at the same moment.
+type collidingRunner struct {
+	memRunner
+	failures int
+	runs     int
+}
+
+func (r *collidingRunner) Run(ctx context.Context, req Request) (Result, error) {
+	r.runs++
+	if r.runs <= r.failures {
+		return Result{ExitCode: 1}, &Error{
+			Kind: KindCrash, Command: "filesystem list", Message: "the Proton Drive CLI crashed",
+			Stderr: crashMarker + "\n[stdout tail] SQLiteError: database is locked\n code: \"SQLITE_BUSY_RECOVERY\"",
+		}
+	}
+	return r.memRunner.Run(ctx, req)
+}
+
+func TestStartupCollisionIsRetried(t *testing.T) {
+	r := &collidingRunner{failures: 2}
+	r.res = Result{Stdout: []byte("[]")}
+	c := NewClient(r)
+	if _, err := c.List(context.Background(), "/my-files"); err != nil {
+		t.Fatalf("list after two startup collisions: %v", err)
+	}
+	if r.runs != 3 {
+		t.Fatalf("runs = %d, want 3", r.runs)
+	}
+	// Beyond the retry budget the error surfaces; other crashes are not retried.
+	r = &collidingRunner{failures: 10}
+	c = NewClient(r)
+	if _, err := c.List(context.Background(), "/my-files"); !IsKind(err, KindCrash) || r.runs != startupRetries+1 {
+		t.Fatalf("err = %v, runs = %d", err, r.runs)
+	}
+	plain := &memRunner{err: &Error{Kind: KindCrash, Stderr: crashMarker + "\nTypeError: x"}}
+	c = NewClient(plain)
+	if _, err := c.List(context.Background(), "/my-files"); !IsKind(err, KindCrash) || len(plain.reqs) != 1 {
+		t.Fatalf("other crash retried: %v, %d runs", err, len(plain.reqs))
+	}
+	// A cancelled context stops the retries.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	r = &collidingRunner{failures: 10}
+	c = NewClient(r)
+	if _, err := c.List(ctx, "/my-files"); err == nil || r.runs != 1 {
+		t.Fatalf("cancelled: %v, runs = %d", err, r.runs)
+	}
+}

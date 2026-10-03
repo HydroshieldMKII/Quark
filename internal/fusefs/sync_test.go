@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -371,5 +372,74 @@ func TestTruncateFsyncAndStatfs(t *testing.T) {
 	var st syscall.Statfs_t
 	if err := syscall.Statfs(f.mnt, &st); err != nil || st.Blocks == 0 || st.Namelen != 255 {
 		t.Fatalf("statfs = %+v, %v", st, err)
+	}
+}
+
+// A file manager resolves paths on its main thread; those lookups must never
+// queue behind downloads or slow listings.
+func TestLookupsNeverWaitForTransfers(t *testing.T) {
+	f := mountFixture(t, Options{ListTTL: 100 * time.Millisecond}, func(f *fixture) {
+		seedBasic(f)
+		for i := range 3 {
+			f.d.AddFile("", "big"+string(rune('0'+i))+".bin", make([]byte, 100_000))
+		}
+	})
+	names(t, f.mnt) // first listing, saved on disk too
+	f.d.SetCommandLatency("download", 1500*time.Millisecond)
+	// Two downloads occupy every transfer slot, a third waits for one.
+	var readers sync.WaitGroup
+	for i := range 3 {
+		readers.Add(1)
+		go func() {
+			defer readers.Done()
+			_, _ = os.ReadFile(filepath.Join(f.mnt, "big"+string(rune('0'+i))+".bin"))
+		}()
+	}
+	defer readers.Wait()
+	time.Sleep(200 * time.Millisecond) // transfers in flight, listing now stale
+	f.d.SetCommandLatency("list", 1000*time.Millisecond)
+	start := time.Now()
+	if _, err := os.Stat(filepath.Join(f.mnt, "hello.txt")); err != nil {
+		t.Fatal(err)
+	}
+	if d := time.Since(start); d > 300*time.Millisecond {
+		t.Fatalf("stat waited %v behind transfers or listings", d)
+	}
+	if got := xattr(t, filepath.Join(f.mnt, "hello.txt"), xaState); got != StateCloud {
+		t.Fatalf("state = %q", got)
+	}
+	// The stale listing is refreshed in the background, once.
+	lists := f.d.Calls("list")
+	waitFor(t, 3*time.Second, func() bool { return f.d.Calls("list") > lists })
+	f.d.SetCommandLatency("list", 0)
+	f.d.SetCommandLatency("download", 0)
+	// Readdir does wait for a fresh listing, but only behind other listings.
+	time.Sleep(150 * time.Millisecond)
+	start = time.Now()
+	names(t, f.mnt)
+	if d := time.Since(start); d > 500*time.Millisecond {
+		t.Fatalf("readdir took %v", d)
+	}
+}
+
+func TestSavedListingServesLookupsAtOnce(t *testing.T) {
+	f := mountFixture(t, Options{}, seedBasic)
+	names(t, f.mnt)
+	names(t, filepath.Join(f.mnt, "Documents"))
+	f.remount(t, Options{})
+	f.d.SetCommandLatency("list", 1500*time.Millisecond)
+	start := time.Now()
+	st, err := os.Stat(filepath.Join(f.mnt, "Documents", "report.pdf"))
+	if err != nil || st.Size() != 3000 {
+		t.Fatalf("stat from saved listings: %v, %v", st, err)
+	}
+	if d := time.Since(start); d > 300*time.Millisecond {
+		t.Fatalf("lookup waited %v for the server", d)
+	}
+	// Offline too.
+	f.d.SetFail(offline())
+	defer f.d.SetFail(nil)
+	if _, err := os.Stat(filepath.Join(f.mnt, "hello.txt")); err != nil {
+		t.Fatalf("offline lookup from saved listing: %v", err)
 	}
 }

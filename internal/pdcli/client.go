@@ -32,6 +32,42 @@ func NewClient(r Runner) *Client {
 	return &Client{runner: r, MetaTimeout: 2 * time.Minute, LoginTimeout: 10 * time.Minute, ListTimeout: 10 * time.Minute}
 }
 
+// startupRetries is how many times a command is started again when the CLI
+// fails while opening its SQLite cache ("database is locked",
+// SQLITE_BUSY_RECOVERY): this happens when one CLI process starts while
+// another is still closing, before any work is done, so starting again a
+// moment later is safe for every command.
+const startupRetries = 4
+
+// run executes a request, retrying CLI startup collisions.
+func (c *Client) run(ctx context.Context, req Request) (Result, error) {
+	var (
+		res Result
+		err error
+	)
+	for attempt := 0; ; attempt++ {
+		res, err = c.runner.Run(ctx, req)
+		if err == nil || attempt >= startupRetries || !isStartupCollision(err) {
+			return res, err
+		}
+		delay := time.Duration(150*(attempt+1)) * time.Millisecond
+		select {
+		case <-time.After(delay):
+		case <-ctx.Done():
+			return res, err
+		}
+	}
+}
+
+// isStartupCollision reports whether err is the CLI failing to open its cache.
+func isStartupCollision(err error) bool {
+	var e *Error
+	if !errors.As(err, &e) || e.Kind != KindCrash {
+		return false
+	}
+	return strings.Contains(e.Stderr, "SQLITE_BUSY") || strings.Contains(e.Stderr, "database is locked")
+}
+
 func usageErr(command, format string, args ...any) error {
 	return &Error{Kind: KindUsage, Command: command, Message: fmt.Sprintf(format, args...)}
 }
@@ -47,7 +83,7 @@ func argv(group, command string, opts []string, pos ...string) []string {
 }
 
 func (c *Client) meta(ctx context.Context, args []string) ([]byte, error) {
-	res, err := c.runner.Run(ctx, Request{Args: args, Timeout: c.MetaTimeout})
+	res, err := c.run(ctx, Request{Args: args, Timeout: c.MetaTimeout})
 	if err != nil {
 		return res.Stdout, err
 	}
@@ -105,7 +141,7 @@ func (c *Client) List(ctx context.Context, path string) ([]drive.Node, error) {
 	if path == "/" || path == drive.SectionDevices.Root() {
 		return nil, usageErr(cmd, "use Roots or Devices for %s", path)
 	}
-	res, err := c.runner.Run(ctx, Request{Args: argv("filesystem", "list", nil, path), Timeout: c.ListTimeout, MaxStdout: ListMaxStdout})
+	res, err := c.run(ctx, Request{Args: argv("filesystem", "list", nil, path), Timeout: c.ListTimeout, MaxStdout: ListMaxStdout})
 	if err != nil {
 		return nil, err
 	}
@@ -388,7 +424,7 @@ func (c *Client) Download(ctx context.Context, s DownloadSpec) (drive.TransferSu
 
 func (c *Client) transfer(ctx context.Context, command string, args []string) (drive.TransferSummary, error) {
 	// No timeout: transfers can legitimately take hours; ctx cancels them.
-	res, err := c.runner.Run(ctx, Request{Args: args})
+	res, err := c.run(ctx, Request{Args: args})
 	if err != nil {
 		if IsKind(err, KindPartial) {
 			if s, perr := ParseSummary(command, res.Stdout); perr == nil {
@@ -584,7 +620,7 @@ func (c *Client) RejectInvitation(ctx context.Context, uid string) error {
 // returns when sign-in completes, fails, times out or ctx is cancelled.
 func (c *Client) Login(ctx context.Context, onURL func(string)) error {
 	sent := false
-	_, err := c.runner.Run(ctx, Request{
+	_, err := c.run(ctx, Request{
 		Args:    []string{"auth", "login", "--json"},
 		Timeout: c.LoginTimeout,
 		OnStdoutLine: func(line string) {
@@ -664,7 +700,7 @@ func ParseVersion(out []byte) (Version, error) {
 // Version runs `--version` and checks the result against MinVersion.
 func (c *Client) Version(ctx context.Context) (Version, error) {
 	// --version also queries proton.me for updates (5 s timeout in the CLI).
-	res, err := c.runner.Run(ctx, Request{Args: []string{"--version"}, Timeout: 20 * time.Second})
+	res, err := c.run(ctx, Request{Args: []string{"--version"}, Timeout: 20 * time.Second})
 	if err != nil {
 		return Version{}, err
 	}

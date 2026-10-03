@@ -651,6 +651,11 @@ second. `internal/fusefs` became a sync engine:
   `.error`, `.status` (JSON on the root), `.sync`. `quark-mount status|sync|pin|unpin|evict|state`
   wrap them; the GNOME Files extension (`data/nautilus/quark-drive.py`, nautilus-python) adds
   "Keep on This Device" / "Free Up Space" / "Sync Now" and emblems (`data/icons/emblems`).
+* Responsiveness (fix after Files froze on 2026-10-03): listings and metadata have their own CLI
+  limit (2) separate from downloads (2) and writes (1), so a file manager's path lookups never
+  queue behind transfers; Lookup/Getattr answer from the last listing (memory or saved on disk)
+  and refresh in the background, Readdir and changes wait for a fresh listing, Open re-checks the
+  parent listing and uses direct I/O when the kernel still has an older size.
 * Safety: names the CLI would sanitize are read-only; UID and type of a node are immutable;
   shared listing slices are copy-on-write; the syncer only acts on journal entries and pins.
 * Tests: 19 on a real mount (pins across remount, eviction, pinned folder following remote
@@ -678,7 +683,7 @@ pinning; sync folder (watch + upload) if the owner wants it.
 | R5 | Interactive prompts hang a process | Always explicit strategies, `Setsid`, timeouts, kill path, hang test in fake CLI. |
 | R6 | Latency of spawning per operation | 0.11 s measured; acceptable. REPL mode is a later optimisation only. |
 | R7 | CLI default log level DEBUG fills `~/.local/state/proton-drive-cli/proton-drive.log` | Spawn with `PROTON_DRIVE_LOG_LEVEL=WARNING`; expose in preferences. |
-| R8 | Concurrent processes share SQLite caches and `events.lock` | Write semaphore of 1; read cap 3; the lock is advisory (only affects event listening). |
+| R8 | Concurrent processes share SQLite caches and `events.lock` | Write semaphore of 1; read cap 2 + transfers 2. Observed 2026-10-03: a CLI process starting while another closes dies at startup with `SQLITE_BUSY_RECOVERY: database is locked` (before any work); `pdcli.Client.run` retries such startups up to 4 times (150 ms steps). The lock is advisory (only affects event listening). |
 | R9 | Redistribution/licence of the CLI binary unclear | Do not bundle (D2); first-run onboarding points to proton.me; ask the owner before bundling. |
 | R10 | gotk4 memory leaks/crashes in rarely used APIs | Stay on mainstream widgets; UI tests with `G_DEBUG=fatal-criticals`; soak test RSS plateau. |
 | R11 | cgo build time and CI RAM | Build cache in CI, `-trimpath`, avoid rebuilding bindings. |
