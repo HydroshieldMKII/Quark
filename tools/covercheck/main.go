@@ -24,6 +24,7 @@ var gates = map[string]float64{
 	"internal/xlog":      80,
 	"internal/tray":      75,
 	"internal/autostart": 80,
+	"internal/fusefs":    80,
 }
 
 type counts struct{ total, covered int }
