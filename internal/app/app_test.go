@@ -249,7 +249,7 @@ func TestReadAndWriteConcurrencyCaps(t *testing.T) {
 		browsers = append(browsers, b)
 		b.Navigate(Location{Section: drive.SectionMyFiles, Trail: []Crumb{{UID: string(rune('a' + i)), Name: "f"}}})
 	}
-	h.until("3 reads in flight", func() bool { return h.be.Peak("read") == 3 })
+	h.until("reads at the cap", func() bool { return h.be.Peak("read") == maxReads })
 	time.Sleep(50 * time.Millisecond)
 	if p := h.be.Peak("read"); p != maxReads {
 		t.Fatalf("peak reads = %d", p)

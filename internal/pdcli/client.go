@@ -46,8 +46,8 @@ func argv(group, command string, opts []string, pos ...string) []string {
 	return append(out, pos...)
 }
 
-func (c *Client) meta(ctx context.Context, maxOut int, args []string) ([]byte, error) {
-	res, err := c.runner.Run(ctx, Request{Args: args, Timeout: c.MetaTimeout, MaxStdout: maxOut})
+func (c *Client) meta(ctx context.Context, args []string) ([]byte, error) {
+	res, err := c.runner.Run(ctx, Request{Args: args, Timeout: c.MetaTimeout})
 	if err != nil {
 		return res.Stdout, err
 	}
@@ -89,7 +89,7 @@ func checkName(command, name string) error {
 
 // Roots lists the top-level sections. It doubles as the cheapest login check.
 func (c *Client) Roots(ctx context.Context) ([]string, error) {
-	out, err := c.meta(ctx, 0, argv("filesystem", "list", nil, "/"))
+	out, err := c.meta(ctx, argv("filesystem", "list", nil, "/"))
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (c *Client) List(ctx context.Context, path string) ([]drive.Node, error) {
 
 // Devices lists synced computers.
 func (c *Client) Devices(ctx context.Context) ([]drive.Device, error) {
-	out, err := c.meta(ctx, 0, argv("filesystem", "list", nil, drive.SectionDevices.Root()))
+	out, err := c.meta(ctx, argv("filesystem", "list", nil, drive.SectionDevices.Root()))
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (c *Client) Info(ctx context.Context, path string) (drive.Node, error) {
 	if err := checkRemote(cmd, path); err != nil {
 		return drive.Node{}, err
 	}
-	out, err := c.meta(ctx, 0, argv("filesystem", "info", nil, path))
+	out, err := c.meta(ctx, argv("filesystem", "info", nil, path))
 	if err != nil {
 		return drive.Node{}, err
 	}
@@ -145,7 +145,7 @@ func (c *Client) CreateFolder(ctx context.Context, parent, name string) (drive.N
 	if err := checkName(cmd, name); err != nil {
 		return drive.Node{}, err
 	}
-	out, err := c.meta(ctx, 0, argv("filesystem", "create-folder", nil, parent, name))
+	out, err := c.meta(ctx, argv("filesystem", "create-folder", nil, parent, name))
 	if err != nil {
 		return drive.Node{}, err
 	}
@@ -161,7 +161,7 @@ func (c *Client) Rename(ctx context.Context, path, newName string) (drive.Node, 
 	if err := checkName(cmd, newName); err != nil {
 		return drive.Node{}, err
 	}
-	out, err := c.meta(ctx, 0, argv("filesystem", "rename", nil, path, newName))
+	out, err := c.meta(ctx, argv("filesystem", "rename", nil, path, newName))
 	if err != nil {
 		return drive.Node{}, err
 	}
@@ -170,7 +170,7 @@ func (c *Client) Rename(ctx context.Context, path, newName string) (drive.Node, 
 
 func (c *Client) batch(ctx context.Context, command string, opts []string, pos []string) ([]drive.ItemResult, error) {
 	group, name, _ := strings.Cut(command, " ")
-	out, err := c.meta(ctx, 0, argv(group, name, opts, pos...))
+	out, err := c.meta(ctx, argv(group, name, opts, pos...))
 	if err != nil {
 		// Batch commands stream results; keep what completed if parseable.
 		if res, perr := ParseBatch(command, out); perr == nil && len(res) > 0 {
@@ -278,7 +278,7 @@ func (c *Client) DeleteForever(ctx context.Context, paths ...string) ([]drive.It
 
 // EmptyTrash permanently deletes everything in /trash (not /photos-trash).
 func (c *Client) EmptyTrash(ctx context.Context) error {
-	_, err := c.meta(ctx, 0, argv("filesystem", "empty-trash", nil))
+	_, err := c.meta(ctx, argv("filesystem", "empty-trash", nil))
 	return err
 }
 
@@ -404,7 +404,7 @@ func (c *Client) Sharing(ctx context.Context, path string) (*drive.Sharing, erro
 	if err := checkRemote(cmd, path); err != nil {
 		return nil, err
 	}
-	out, err := c.meta(ctx, 0, argv("sharing", "status", nil, path))
+	out, err := c.meta(ctx, argv("sharing", "status", nil, path))
 	if err != nil {
 		return nil, err
 	}
@@ -457,7 +457,7 @@ func (c *Client) Invite(ctx context.Context, path string, s InviteSpec) (*drive.
 	if s.IncludeName {
 		opts = append(opts, "--include-node-name")
 	}
-	out, err := c.meta(ctx, 0, argv("sharing", "invite", opts, path))
+	out, err := c.meta(ctx, argv("sharing", "invite", opts, path))
 	if err != nil {
 		return nil, err
 	}
@@ -477,7 +477,7 @@ func (c *Client) RemoveMembers(ctx context.Context, path string, emails []string
 	for _, e := range emails {
 		opts = append(opts, "--email", e)
 	}
-	out, err := c.meta(ctx, 0, argv("sharing", "remove", opts, path))
+	out, err := c.meta(ctx, argv("sharing", "remove", opts, path))
 	if err != nil {
 		return nil, err
 	}
@@ -509,7 +509,7 @@ func (c *Client) SetLink(ctx context.Context, path string, s LinkSpec) (*drive.S
 	if !s.Expires.IsZero() {
 		opts = append(opts, "--expiration", s.Expires.UTC().Format("2006-01-02"))
 	}
-	out, err := c.meta(ctx, 0, argv("sharing", "set-url", opts, path))
+	out, err := c.meta(ctx, argv("sharing", "set-url", opts, path))
 	if err != nil {
 		return nil, err
 	}
@@ -522,7 +522,7 @@ func (c *Client) RemoveLink(ctx context.Context, path string) (*drive.Sharing, e
 	if err := checkRemote(cmd, path); err != nil {
 		return nil, err
 	}
-	out, err := c.meta(ctx, 0, argv("sharing", "remove-url", nil, path))
+	out, err := c.meta(ctx, argv("sharing", "remove-url", nil, path))
 	if err != nil {
 		return nil, err
 	}
@@ -534,13 +534,13 @@ func (c *Client) Leave(ctx context.Context, path string) error {
 	if err := checkRemote("sharing leave", path); err != nil {
 		return err
 	}
-	_, err := c.meta(ctx, 0, argv("sharing", "leave", nil, path))
+	_, err := c.meta(ctx, argv("sharing", "leave", nil, path))
 	return err
 }
 
 // Invitations lists pending invitations for the current user.
 func (c *Client) Invitations(ctx context.Context) ([]drive.Invitation, error) {
-	out, err := c.meta(ctx, 0, argv("invitation", "list", nil))
+	out, err := c.meta(ctx, argv("invitation", "list", nil))
 	if err != nil {
 		return nil, err
 	}
@@ -559,7 +559,7 @@ func (c *Client) AcceptInvitation(ctx context.Context, uid string) error {
 	if err := checkInvitationUID("invitation accept", uid); err != nil {
 		return err
 	}
-	_, err := c.meta(ctx, 0, argv("invitation", "accept", nil, uid))
+	_, err := c.meta(ctx, argv("invitation", "accept", nil, uid))
 	return err
 }
 
@@ -568,7 +568,7 @@ func (c *Client) RejectInvitation(ctx context.Context, uid string) error {
 	if err := checkInvitationUID("invitation reject", uid); err != nil {
 		return err
 	}
-	_, err := c.meta(ctx, 0, argv("invitation", "reject", nil, uid))
+	_, err := c.meta(ctx, argv("invitation", "reject", nil, uid))
 	return err
 }
 
@@ -595,7 +595,7 @@ func (c *Client) Login(ctx context.Context, onURL func(string)) error {
 
 // Logout signs out and clears the CLI's credentials and caches.
 func (c *Client) Logout(ctx context.Context) error {
-	_, err := c.meta(ctx, 0, []string{"auth", "logout", "--json"})
+	_, err := c.meta(ctx, []string{"auth", "logout", "--json"})
 	return err
 }
 
