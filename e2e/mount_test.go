@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"syscall"
 	"testing"
 	"time"
 
@@ -58,6 +59,30 @@ func TestMountRoundTrip(t *testing.T) {
 	nodes, err := s.client.List(context.Background(), s.sb.Root())
 	if err != nil || len(nodes) != 1 || nodes[0].Name != "notes [1].txt" || nodes[0].Size != int64(len(content)) {
 		t.Fatalf("remote listing: %+v, %v", nodes, err)
+	}
+
+	// Pin through the control attribute: state goes from cached to pinned, status counts it.
+	notes := filepath.Join(mnt, "notes [1].txt")
+	if err := syscall.Setxattr(notes, "user.quark.pin", []byte("1"), 0); err != nil {
+		t.Fatalf("pin: %v", err)
+	}
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		buf := make([]byte, 64)
+		n, err := syscall.Getxattr(notes, "user.quark.state", buf)
+		if err == nil && string(buf[:n]) == fusefs.StatePinned {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("state = %q, %v", buf[:n], err)
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	if st := m.Status(); st.Pinned != 1 || st.Pending != 0 {
+		t.Fatalf("status = %+v", st)
+	}
+	if err := syscall.Setxattr(notes, "user.quark.pin", []byte("0"), 0); err != nil {
+		t.Fatalf("unpin: %v", err)
 	}
 
 	// Folders, rename, move, modify, remove.

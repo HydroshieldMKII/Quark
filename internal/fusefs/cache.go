@@ -24,14 +24,17 @@ type contentCache struct {
 	dir   string
 	limit int64
 	log   *slog.Logger
+	// keep reports whether a UID is pinned (never evicted).
+	keep func(uid string) bool
 
-	mu    sync.Mutex
-	pins  map[string]int         // uid -> open handles
-	locks map[string]*sync.Mutex // uid -> single-flight download lock
+	mu       sync.Mutex
+	pins     map[string]int         // safe uid -> open handles
+	locks    map[string]*sync.Mutex // uid -> single-flight download lock
+	fetching map[string]bool        // uid -> download in progress
 }
 
-func newContentCache(dir string, limit int64, log *slog.Logger) (*contentCache, error) {
-	for _, sub := range []string{"files", "stage", "unsynced", "tmp"} {
+func newContentCache(dir string, limit int64, log *slog.Logger, keep func(uid string) bool) (*contentCache, error) {
+	for _, sub := range []string{"files", "stage", "unsynced", "tmp", "listings"} {
 		if err := os.MkdirAll(filepath.Join(dir, sub), 0o700); err != nil {
 			return nil, err
 		}
@@ -41,7 +44,43 @@ func newContentCache(dir string, limit int64, log *slog.Logger) (*contentCache, 
 	_ = os.RemoveAll(filepath.Join(dir, "tmp"))
 	_ = os.MkdirAll(filepath.Join(dir, "stage"), 0o700)
 	_ = os.MkdirAll(filepath.Join(dir, "tmp"), 0o700)
-	return &contentCache{dir: dir, limit: limit, log: log, pins: map[string]int{}, locks: map[string]*sync.Mutex{}}, nil
+	if keep == nil {
+		keep = func(string) bool { return false }
+	}
+	return &contentCache{dir: dir, limit: limit, log: log, keep: keep, pins: map[string]int{}, locks: map[string]*sync.Mutex{}, fetching: map[string]bool{}}, nil
+}
+
+// has reports whether n's current revision is cached.
+func (c *contentCache) has(n drive.Node) bool {
+	_, err := os.Stat(c.pathFor(n))
+	return err == nil
+}
+
+// inflight reports whether uid is being downloaded.
+func (c *contentCache) inflight(uid string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.fetching[uid]
+}
+
+func (c *contentCache) inflightCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return len(c.fetching)
+}
+
+// size returns the bytes held under files.
+func (c *contentCache) size() int64 {
+	var total int64
+	_ = filepath.WalkDir(filepath.Join(c.dir, "files"), func(_ string, d os.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			if info, ierr := d.Info(); ierr == nil {
+				total += info.Size()
+			}
+		}
+		return nil
+	})
+	return total
 }
 
 func (c *contentCache) pathFor(n drive.Node) string {
@@ -97,6 +136,14 @@ func (c *contentCache) fetch(ctx context.Context, m *Mounted, n drive.Node, remo
 		_ = os.Chtimes(path, now, now) // LRU touch
 		return path, 0
 	}
+	c.mu.Lock()
+	c.fetching[n.UID] = true
+	c.mu.Unlock()
+	defer func() {
+		c.mu.Lock()
+		delete(c.fetching, n.UID)
+		c.mu.Unlock()
+	}()
 	if err := m.acquire(ctx, m.reads); err != nil {
 		return "", syscall.EINTR
 	}
@@ -171,29 +218,32 @@ func (c *contentCache) dropOtherRevisions(n drive.Node, keep string) {
 	}
 }
 
-// forget drops everything cached for a UID (after trash or overwrite).
-func (c *contentCache) forget(uid string) {
+// forget drops everything cached for a UID (after trash or eviction). It
+// reports false when the content is open.
+func (c *contentCache) forget(uid string) bool {
 	c.mu.Lock()
-	pinned := c.pins[uid] > 0
+	open := c.pins[safeSegment(uid)] > 0
 	c.mu.Unlock()
-	if pinned {
-		return
+	if open {
+		return false
 	}
 	_ = os.RemoveAll(filepath.Join(c.dir, "files", safeSegment(uid)))
+	return true
 }
 
 func (c *contentCache) pin(uid string, delta int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.pins[uid] += delta
-	if c.pins[uid] <= 0 {
-		delete(c.pins, uid)
+	key := safeSegment(uid)
+	c.pins[key] += delta
+	if c.pins[key] <= 0 {
+		delete(c.pins, key)
 	}
 }
 
-// keepUnsynced moves a staging file whose upload failed to <dir>/unsynced.
-func (c *contentCache) keepUnsynced(path string) string {
-	dst := filepath.Join(c.dir, "unsynced", time.Now().Format("20060102-150405")+"-"+filepath.Base(path))
+// keepUnsynced moves a local copy that cannot be uploaded to <dir>/unsynced.
+func (c *contentCache) keepUnsynced(path, name string) string {
+	dst := filepath.Join(c.dir, "unsynced", time.Now().Format("20060102-150405")+"-"+drive.LocalName(name))
 	if err := os.Rename(path, dst); err != nil {
 		if err := copyFile(path, dst); err != nil {
 			return ""
@@ -243,7 +293,7 @@ func (c *contentCache) evict() {
 		if total <= c.limit {
 			break
 		}
-		if c.pins[f.uid] > 0 {
+		if c.pins[f.uid] > 0 || c.keep(f.uid) {
 			continue
 		}
 		if err := os.Remove(f.path); err == nil {

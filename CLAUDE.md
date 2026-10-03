@@ -42,8 +42,13 @@ test strategy, methodology (GitHub Spec Kit) and milestones to follow.
 - Real-account fixtures (asks first, sandboxed): `make fixtures` · Real-CLI round trip: `make e2e`
 - Install for the desktop: `make flatpak` (per-user Flatpak, bundles the CLI). `make install-user`
   is the non-Flatpak alternative for development; do not keep both installed.
-- Folder mount: `make install-mount` builds `~/.local/bin/quark-mount` (host only). FUSE tests run
-  as part of `make test` and skip without /dev/fuse; `make e2e` includes a sandboxed real mount.
+- Folder mount: `make install-mount` builds `~/.local/bin/quark-mount` (host only), installs the
+  user unit and the GNOME Files extension (`data/nautilus/`, tests via `make test-nautilus`).
+  FUSE tests run as part of `make test` and skip without /dev/fuse; `make e2e` includes a
+  sandboxed real mount. Since 2026-10-03 the mount is the priority over the GTK app: local
+  changes are journaled (`<cache>/pending`) and uploaded with retries and conflict copies, pins
+  (`<cache>/pins.json`) are kept on device by a background pass, state and controls are
+  extended attributes (`internal/fusefs/xattr.go`).
 - Translations: mark strings with T/Tf/N/M, then `make i18n`; tests require every string in
   `internal/i18n/po/fr.po`.
 - Module path and app ID are placeholders (`example.org/quark`, `org.example.Quark`) until the

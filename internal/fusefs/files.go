@@ -24,6 +24,10 @@ type handle struct {
 	// stage is the staging directory of a write handle (contains one file
 	// named like the remote node).
 	stage string
+	// base is the revision the staging copy started from.
+	base string
+	// pinned is set on read handles that hold a cache pin.
+	pinned bool
 }
 
 var (
@@ -51,6 +55,13 @@ func (n *node) Open(ctx context.Context, flags uint32) (fs.FileHandle, uint32, s
 	n.mu.Unlock()
 	n.m.log.Debug("open", "uid", attr.UID, "rev", attr.RevisionUID, "write", wantWrite)
 	if !wantWrite {
+		// A change waiting for upload is the current content.
+		if p := n.m.pending.contentPath(attr.UID); p != "" {
+			f, err := os.Open(p) //nolint:gosec // our own journal
+			if err == nil {
+				return &handle{n: n, f: f}, fuse.FOPEN_DIRECT_IO, 0
+			}
+		}
 		path, errno := n.m.cache.fetch(ctx, n.m, attr, n.path)
 		if errno != 0 {
 			return nil, 0, errno
@@ -62,7 +73,10 @@ func (n *node) Open(ctx context.Context, flags uint32) (fs.FileHandle, uint32, s
 		n.m.cache.pin(attr.UID, 1)
 		// No FOPEN_KEEP_CACHE: the kernel drops its page cache on each open,
 		// so a new version uploaded elsewhere is never served from stale pages.
-		return &handle{n: n, f: f}, 0, 0
+		return &handle{n: n, f: f, pinned: true}, 0, 0
+	}
+	if errno := n.writable(); errno != 0 {
+		return nil, 0, errno
 	}
 	h, errno := n.openWrite(ctx, attr, flags&syscall.O_TRUNC != 0)
 	if errno != 0 {
@@ -78,11 +92,20 @@ func (n *node) openWrite(ctx context.Context, attr drive.Node, truncate bool) (*
 		return nil, syscall.EIO
 	}
 	target := filepath.Join(stage, drive.LocalName(attr.Name))
-	if !truncate && attr.HasSize && attr.Size > 0 || !truncate && !attr.HasSize {
-		src, errno := n.m.cache.fetch(ctx, n.m, attr, n.path)
-		if errno != 0 {
-			_ = os.RemoveAll(stage)
-			return nil, errno
+	base := attr.RevisionUID
+	src := ""
+	if e := n.m.pending.get(attr.UID); e != nil {
+		// Edits chain on the pending content; the base stays the revision
+		// the first unsynced edit was made from.
+		src, base = e.content(n.m.pending.dir), e.BaseRevision
+	}
+	if !truncate && (src != "" || attr.HasSize && attr.Size > 0 || !attr.HasSize) {
+		if src == "" {
+			var errno syscall.Errno
+			if src, errno = n.m.cache.fetch(ctx, n.m, attr, n.path); errno != 0 {
+				_ = os.RemoveAll(stage)
+				return nil, errno
+			}
 		}
 		if err := copyFile(src, target); err != nil {
 			_ = os.RemoveAll(stage)
@@ -94,7 +117,7 @@ func (n *node) openWrite(ctx context.Context, attr drive.Node, truncate bool) (*
 		_ = os.RemoveAll(stage)
 		return nil, syscall.EIO
 	}
-	h := &handle{n: n, f: f, write: true, stage: stage}
+	h := &handle{n: n, f: f, write: true, stage: stage, base: base}
 	n.mu.Lock()
 	n.writers++
 	n.staging = target
@@ -169,7 +192,7 @@ func (n *node) Create(ctx context.Context, name string, _ uint32, _ uint32, out 
 		_ = os.RemoveAll(stage)
 		return nil, nil, 0, syscall.EIO
 	}
-	h := &handle{n: cn, f: f, write: true, stage: stage}
+	h := &handle{n: cn, f: f, write: true, stage: stage, base: c.RevisionUID}
 	cn.mu.Lock()
 	cn.writers++
 	cn.staging = target
@@ -222,19 +245,19 @@ func (h *handle) Fsync(_ context.Context, _ uint32) syscall.Errno {
 	return 0
 }
 
-// Flush implements fs.FileFlusher: called on close(2); uploads a dirty staging copy.
+// Flush implements fs.FileFlusher: called on close(2); commits a dirty staging copy.
 func (h *handle) Flush(ctx context.Context) syscall.Errno {
 	if !h.write || !h.dirty {
 		return 0
 	}
-	return h.upload(ctx)
+	return h.commit(ctx)
 }
 
 // Release implements fs.FileReleaser.
 func (h *handle) Release(ctx context.Context) syscall.Errno {
 	var errno syscall.Errno
 	if h.write && h.dirty {
-		errno = h.upload(ctx) // Flush was not called (e.g. mmap-only access)
+		errno = h.commit(ctx) // Flush was not called (e.g. mmap-only access)
 	}
 	_ = h.f.Close()
 	if h.write {
@@ -245,20 +268,18 @@ func (h *handle) Release(ctx context.Context) syscall.Errno {
 			h.n.staging = ""
 		}
 		h.n.mu.Unlock()
-		if errno == 0 {
-			_ = os.RemoveAll(h.stage)
-		}
-	} else {
-		h.n.m.cache.pin(h.n.attr.UID, -1)
+		_ = os.RemoveAll(h.stage)
+	} else if h.pinned {
+		h.n.m.cache.pin(h.n.uid, -1)
 	}
 	return errno
 }
 
-// upload sends the staging copy as a new version of the node. The data is
-// never discarded on failure: it is kept under <cache>/unsynced so the user
-// can recover it, and the error is reported to the program that closed the
-// file.
-func (h *handle) upload(ctx context.Context) syscall.Errno {
+// commit makes the staging copy the pending content of the node, durable
+// in the journal, then tries to upload it at once. The close succeeds as
+// soon as the change is journaled: a failed upload is retried in the
+// background and never loses the data.
+func (h *handle) commit(ctx context.Context) syscall.Errno {
 	if err := h.f.Sync(); err != nil {
 		return syscall.EIO
 	}
@@ -271,28 +292,20 @@ func (h *handle) upload(ctx context.Context) syscall.Errno {
 		return syscall.EIO
 	}
 	pn := parentNode.Operations().(*node)
-	if err := m.acquire(ctx, m.writes); err != nil {
-		return syscall.EINTR
+	// The journal takes the file itself (same file system: a rename), so a
+	// second close of a dup'ed descriptor works on a fresh copy.
+	snapshot := filepath.Join(h.stage, "commit")
+	if err := copyFile(h.f.Name(), snapshot); err != nil {
+		return syscall.EIO
 	}
-	_, err := m.opts.Backend.Upload(ctx, pdcli.UploadSpec{
-		LocalPaths: []string{h.f.Name()}, Parent: pn.path,
-		FileStrategy: pdcli.UploadFileNewRevision, FolderStrategy: pdcli.UploadFolderMerge,
-	})
-	m.release(m.writes)
+	e, err := m.pending.put(attr.UID, attr.Name, pn.path, h.base, snapshot)
 	if err != nil {
-		kept := m.cache.keepUnsynced(h.f.Name())
-		m.log.Error("upload failed; local copy kept", "uid", attr.UID, "kept", kept != "", "err", err)
-		return toErrno(err)
+		m.log.Error("journaling the change failed; copy kept under unsynced", "name", attr.Name, "err", err)
+		m.cache.keepUnsynced(snapshot, attr.Name)
+		return syscall.EIO
 	}
 	h.dirty = false
-	pn.invalidate()
-	// Refresh the node's metadata (size, revision) and seed the content cache
-	// with what was just written, so the next open does not download it again.
-	if c, e := pn.find(ctx, drive.LocalName(attr.Name)); e == 0 {
-		h.n.mu.Lock()
-		h.n.attr = c
-		h.n.mu.Unlock()
-		m.cache.seed(c, h.f.Name())
-	}
+	m.log.Debug("change journaled", "uid", attr.UID, "gen", e.Gen, "size", e.Size)
+	m.syncer.uploadNow(ctx, e.UID, e.Gen)
 	return 0
 }

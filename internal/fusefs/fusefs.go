@@ -3,14 +3,19 @@
 //
 // Model: directory listings are cached for a short time; a file's content is
 // downloaded in full into a local cache on first open and served from
-// there; writes go to a local staging copy and are uploaded as a new
-// version when the file is closed. Deleting moves to the trash. Files
-// stay end-to-end encrypted on Proton's side: only the CLI decrypts them,
-// into this user's cache directory.
+// there; writes go to a local staging copy that becomes a pending change
+// when the file is closed and is uploaded as a new version, at once when
+// possible and otherwise retried in the background (a remote change made
+// meanwhile turns the upload into a conflict copy). Pinned files and
+// folders are kept on this device by a background pass. Deleting moves to
+// the trash. Files stay end-to-end encrypted on Proton's side: only the CLI
+// decrypts them, into this user's cache directory. Extended attributes
+// (see xattr.go) expose state and controls to other programs.
 package fusefs
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"hash/fnv"
 	"log/slog"
@@ -24,6 +29,7 @@ import (
 	"github.com/hanwen/go-fuse/v2/fuse"
 
 	"example.org/quark/internal/drive"
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/pdcli"
 )
 
@@ -56,6 +62,11 @@ type Options struct {
 	CacheLimit int64
 	// MaxReads and MaxWrites cap concurrent CLI processes (default 2 and 1).
 	MaxReads, MaxWrites int
+	// SyncInterval is how often pinned content is checked (default 1 min).
+	SyncInterval time.Duration
+	// RetryBase is the first retry delay of a failed upload (default 5 s);
+	// later retries back off up to 5 minutes.
+	RetryBase time.Duration
 	// AddressByName addresses nodes by path names instead of UIDs. Only for
 	// tests through the sandbox guard, which refuses UID segments.
 	AddressByName bool
@@ -79,6 +90,12 @@ func (o *Options) defaults() {
 	if o.MaxWrites <= 0 {
 		o.MaxWrites = 1
 	}
+	if o.SyncInterval <= 0 {
+		o.SyncInterval = time.Minute
+	}
+	if o.RetryBase <= 0 {
+		o.RetryBase = 5 * time.Second
+	}
 	if o.Logger == nil {
 		o.Logger = slog.New(slog.DiscardHandler)
 	}
@@ -86,15 +103,47 @@ func (o *Options) defaults() {
 
 // Mounted is a mounted file system.
 type Mounted struct {
-	opts   Options
-	server *fuse.Server
-	cache  *contentCache
-	reads  chan struct{}
-	writes chan struct{}
-	log    *slog.Logger
-	root   *node
-	uid    uint32
-	gid    uint32
+	opts    Options
+	server  *fuse.Server
+	cache   *contentCache
+	pins    *pinStore
+	pending *pendingStore
+	syncer  *syncer
+	reads   chan struct{}
+	writes  chan struct{}
+	log     *slog.Logger
+	root    *node
+	uid     uint32
+	gid     uint32
+	// inodes are the live nodes by UID, for background refreshes.
+	inodesMu sync.Mutex
+	inodes   map[string]*node
+	// protected holds the cache segments of files found under pinned
+	// folders by the last sync pass; they are never evicted.
+	protected map[string]bool
+}
+
+// keepCached reports whether the cache segment seg belongs to a pinned file:
+// pinned itself, found under a pinned folder, or a live inode with a pinned
+// ancestor.
+func (m *Mounted) keepCached(seg string) bool {
+	if m.pins.hasSegment(seg) {
+		return true
+	}
+	m.inodesMu.Lock()
+	protected := m.protected[seg]
+	var live *node
+	for uid, n := range m.inodes {
+		if safeSegment(uid) == seg {
+			live = n
+			break
+		}
+	}
+	m.inodesMu.Unlock()
+	if protected {
+		return true
+	}
+	return live != nil && live.pinned()
 }
 
 // Mount mounts the drive at mountpoint, which must be an existing empty
@@ -107,23 +156,38 @@ func Mount(mountpoint string, o Options) (*Mounted, error) {
 	if !filepath.IsAbs(o.CacheDir) {
 		return nil, errors.New("fusefs: CacheDir must be absolute")
 	}
-	cache, err := newContentCache(o.CacheDir, o.CacheLimit, o.Logger)
+	pins := newPinStore(filepath.Join(o.CacheDir, "pins.json"))
+	pending, err := newPendingStore(filepath.Join(o.CacheDir, "pending"))
 	if err != nil {
 		return nil, err
 	}
 	m := &Mounted{
-		opts: o, cache: cache, log: o.Logger,
+		opts: o, pins: pins, pending: pending, log: o.Logger,
 		reads: make(chan struct{}, o.MaxReads), writes: make(chan struct{}, o.MaxWrites),
 		uid: uint32(os.Getuid()), gid: uint32(os.Getgid()), //nolint:gosec // ids are small
+		inodes: map[string]*node{}, protected: map[string]bool{},
 	}
-	m.root = &node{m: m, attr: drive.Node{UID: "root", Name: "/", NameOK: true, Type: drive.TypeFolder}, path: o.Root}
+	m.cache, err = newContentCache(o.CacheDir, o.CacheLimit, o.Logger, m.keepCached)
+	if err != nil {
+		return nil, err
+	}
+	m.syncer = newSyncer(m)
+	m.root = m.newNode(drive.Node{UID: "root", Name: "/", NameOK: true, Type: drive.TypeFolder}, o.Root)
+	m.inodes["root"] = m.root
+	if o.ReadOnly && len(pending.entries) > 0 {
+		m.log.Warn("read-only mount: pending changes from an earlier run are kept but not uploaded", "pending", len(pending.entries))
+	}
 	ttl := o.ListTTL
 	fsOpts := &fs.Options{
 		EntryTimeout: &ttl, AttrTimeout: &ttl, NegativeTimeout: &ttl,
 		UID: m.uid, GID: m.gid,
 		MountOptions: fuse.MountOptions{
 			FsName: "quark", Name: "quark", Debug: o.Debug,
-			MaxWrite: 1 << 20, DisableXAttrs: true,
+			MaxWrite: 1 << 20,
+			// With atomic O_TRUNC the kernel passes O_TRUNC to Open instead
+			// of truncating afterwards, so opening a file to overwrite it
+			// never downloads the old content first.
+			ExtraCapabilities: fuse.CAP_ATOMIC_O_TRUNC,
 			// Without this the kernel would let any local user read the
 			// decrypted files through the mount.
 			Options: []string{"default_permissions"},
@@ -139,12 +203,74 @@ func Mount(mountpoint string, o Options) (*Mounted, error) {
 		_ = server.Unmount()
 		return nil, err
 	}
-	m.log.Info("mounted", "root", o.Root, "readOnly", o.ReadOnly)
+	if !o.ReadOnly {
+		m.syncer.start()
+		m.syncer.kick()
+	}
+	m.log.Info("mounted", "root", o.Root, "readOnly", o.ReadOnly, "pins", pins.count(), "pending", len(pending.entries))
 	return m, nil
 }
 
-// Unmount detaches the file system. Open files are flushed by the kernel first.
-func (m *Mounted) Unmount() error { return m.server.Unmount() }
+// Unmount detaches the file system. Open files are flushed by the kernel
+// first; background work is then stopped. Pending changes stay in the
+// cache directory and resume on the next mount.
+func (m *Mounted) Unmount() error {
+	if err := m.server.Unmount(); err != nil {
+		return err
+	}
+	m.syncer.stop()
+	if n, _, _ := m.pending.stats(); n > 0 {
+		m.log.Warn("unmounted with changes still pending; they resume on the next mount", "pending", n)
+	}
+	return nil
+}
+
+// saveListing keeps a folder listing on disk for offline use after a restart.
+func (m *Mounted) saveListing(uid string, nodes []drive.Node) {
+	data, err := json.Marshal(nodes)
+	if err != nil {
+		return
+	}
+	path := filepath.Join(m.opts.CacheDir, "listings", safeSegment(uid)+".json")
+	if err := fsutil.WriteFileAtomic(path, data, 0o600); err != nil {
+		m.log.Warn("saving listing", "err", err)
+	}
+}
+
+// loadListing returns the listing saved for uid, or nil.
+func (m *Mounted) loadListing(uid string) []drive.Node {
+	data, err := os.ReadFile(filepath.Join(m.opts.CacheDir, "listings", safeSegment(uid)+".json")) //nolint:gosec // our own file
+	if err != nil {
+		return nil
+	}
+	var nodes []drive.Node
+	if json.Unmarshal(data, &nodes) != nil {
+		return nil
+	}
+	if nodes == nil {
+		nodes = []drive.Node{}
+	}
+	m.log.Info("offline: using the saved listing", "uid", uid, "entries", len(nodes))
+	return nodes
+}
+
+// Pending returns the local changes not yet uploaded, oldest first.
+func (m *Mounted) Pending() []PendingChange {
+	var out []PendingChange
+	for _, e := range m.pending.list() {
+		out = append(out, PendingChange{Name: e.Name, Size: e.Size, Updated: e.Updated, Attempts: e.Attempts, LastError: e.LastError})
+	}
+	return out
+}
+
+// PendingChange describes one entry of Pending.
+type PendingChange struct {
+	Name      string
+	Size      int64
+	Updated   time.Time
+	Attempts  int
+	LastError string
+}
 
 // Wait blocks until the file system is unmounted.
 func (m *Mounted) Wait() { m.server.Wait() }
@@ -202,7 +328,10 @@ func ino(uid string) uint64 {
 // entries is the cached listing.
 type node struct {
 	fs.Inode
-	m    *Mounted
+	m *Mounted
+	// uid and dir never change and may be read without the lock.
+	uid  string
+	dir  bool
 	mu   sync.Mutex
 	attr drive.Node
 	// path addresses this node for the CLI.
@@ -232,7 +361,12 @@ var (
 	_ fs.NodeStatfser  = (*node)(nil)
 )
 
-func (n *node) isDir() bool { return n.attr.Type == drive.TypeFolder }
+func (n *node) isDir() bool { return n.dir }
+
+// newNode makes a node for c (its UID and type are fixed for life).
+func (m *Mounted) newNode(c drive.Node, path string) *node {
+	return &node{m: m, uid: c.UID, dir: c.Type == drive.TypeFolder, attr: c, path: path}
+}
 
 // childPath is the CLI path of a child listed under this node.
 func (n *node) childPath(c drive.Node) string {
@@ -258,12 +392,26 @@ func (n *node) list(ctx context.Context, force bool) ([]drive.Node, syscall.Errn
 	nodes, err := n.m.opts.Backend.List(ctx, n.path)
 	if err != nil {
 		n.m.log.Warn("list failed", "err", err)
+		// Offline, the last listing is better than an error: it is what
+		// the cache and the journal can still serve.
+		if entries == nil && retryable(err) {
+			entries = n.m.loadListing(n.uid)
+		}
+		if entries != nil && retryable(err) {
+			n.mu.Lock()
+			if n.entries == nil {
+				n.entries = entries
+			}
+			n.mu.Unlock()
+			return entries, 0
+		}
 		return nil, toErrno(err)
 	}
 	n.mu.Lock()
 	n.entries, n.listed = nodes, time.Now()
 	n.mu.Unlock()
-	n.m.log.Debug("listed", "uid", n.attr.UID, "entries", len(nodes))
+	n.m.saveListing(n.uid, nodes)
+	n.m.log.Debug("listed", "uid", n.uid, "entries", len(nodes))
 	return nodes, 0
 }
 
@@ -310,7 +458,14 @@ func (n *node) child(ctx context.Context, c drive.Node) *fs.Inode {
 		en.mu.Unlock()
 		return existing
 	}
-	return n.NewInode(ctx, &node{m: n.m, attr: c, path: path}, n.stable(c))
+	nn := n.m.newNode(c, path)
+	inode := n.NewInode(ctx, nn, n.stable(c))
+	if live, ok := inode.Operations().(*node); ok {
+		n.m.inodesMu.Lock()
+		n.m.inodes[c.UID] = live
+		n.m.inodesMu.Unlock()
+	}
+	return inode
 }
 
 func (n *node) fillAttr(out *fuse.Attr) {
@@ -325,6 +480,13 @@ func (n *node) fillAttr(out *fuse.Attr) {
 		out.Mode = syscall.S_IFREG | 0o600
 		out.Nlink = 1
 		out.Size = uint64(max(a.Size, 0)) //nolint:gosec // non-negative
+		if p := n.m.pending.contentPath(a.UID); p != "" {
+			if st, err := os.Stat(p); err == nil {
+				out.Size = uint64(st.Size()) //nolint:gosec // non-negative
+				mt := st.ModTime()
+				a.Modified, a.ContentModified = mt, mt
+			}
+		}
 		if n.writers > 0 && n.staging != "" {
 			if st, err := os.Stat(n.staging); err == nil {
 				out.Size = uint64(st.Size()) //nolint:gosec // non-negative
@@ -395,6 +557,9 @@ func (n *node) Setattr(ctx context.Context, f fs.FileHandle, in *fuse.SetAttrIn,
 		if n.isDir() {
 			return syscall.EISDIR
 		}
+		if errno := n.writable(); errno != 0 {
+			return errno
+		}
 		if errno := n.truncate(ctx, f, int64(sz)); errno != 0 { //nolint:gosec // size from the kernel
 			return errno
 		}
@@ -441,9 +606,22 @@ func (n *node) truncate(ctx context.Context, f fs.FileHandle, size int64) syscal
 		return syscall.EIO
 	}
 	h.dirty = true
-	errno = h.upload(ctx)
+	errno = h.commit(ctx)
 	_ = h.Release(ctx)
 	return errno
+}
+
+// writable reports whether a file's content may be changed through the
+// mount. A name the CLI would sanitize on download cannot be uploaded back
+// under the same name, so such files are read-only here.
+func (n *node) writable() syscall.Errno {
+	n.mu.Lock()
+	name := n.attr.Name
+	n.mu.Unlock()
+	if drive.LocalName(name) != name {
+		return syscall.EPERM
+	}
+	return 0
 }
 
 // Statfs implements fs.NodeStatfser with generous constants: the CLI does
@@ -524,8 +702,23 @@ func (n *node) trashChild(ctx context.Context, name string, dir bool) syscall.Er
 		return toErrno(err)
 	}
 	n.invalidate()
-	n.m.cache.forget(c.UID)
+	n.m.dropLocal(c.UID)
 	return 0
+}
+
+// dropLocal forgets a node that left the tree: its cached content goes,
+// a pending change of it is kept under unsynced (the user may want it
+// back), and its pin is released.
+func (m *Mounted) dropLocal(uid string) {
+	if p := m.pending.contentPath(uid); p != "" {
+		if e := m.pending.get(uid); e != nil {
+			kept := m.cache.keepUnsynced(p, e.Name)
+			m.log.Warn("removed a file with a change not yet uploaded; copy kept", "name", e.Name, "kept", kept)
+			m.pending.done(uid, e.Gen)
+		}
+	}
+	m.cache.forget(uid)
+	_ = m.pins.unset(uid)
 }
 
 // Rename implements fs.NodeRenamer. An existing target is moved to the trash
@@ -558,7 +751,7 @@ func (n *node) Rename(ctx context.Context, name string, newParent fs.InodeEmbedd
 			return toErrno(err)
 		}
 		target.invalidate()
-		n.m.cache.forget(existing.UID)
+		n.m.dropLocal(existing.UID)
 	}
 	path := n.childPath(c)
 	if target != n {
@@ -567,7 +760,7 @@ func (n *node) Rename(ctx context.Context, name string, newParent fs.InodeEmbedd
 		}
 		n.invalidate()
 		target.invalidate()
-		c.ParentUID = target.attr.UID
+		c.ParentUID = target.uid
 		path = target.childPath(c)
 	}
 	if newName != drive.LocalName(c.Name) {
@@ -578,12 +771,15 @@ func (n *node) Rename(ctx context.Context, name string, newParent fs.InodeEmbedd
 	}
 	n.invalidate()
 	target.invalidate()
+	newPath := target.childPath(c)
 	if ch := n.GetChild(name); ch != nil {
 		cn := ch.Operations().(*node)
 		cn.mu.Lock()
 		cn.attr.Name, cn.attr.ParentUID = c.Name, c.ParentUID
-		cn.path = target.childPath(c)
+		cn.path = newPath
 		cn.mu.Unlock()
 	}
+	n.m.pins.update(c.UID, c.Name, newPath)
+	n.m.pending.rename(c.UID, c.Name, target.path)
 	return 0
 }

@@ -628,6 +628,38 @@ Flathub submission, homepage URL once published.
 * Polish: toasts inside open dialogs, Copy Link / Remove Link / Properties in the file list,
   finished downloads open from the Transfers view.
 
+### M8 — Two-way sync around the mount (done 2026-10-03)
+
+Owner decision 2026-10-03: the product is built around the FUSE mount first; the GTK app comes
+second. `internal/fusefs` became a sync engine:
+
+* **Journal** (`pending.go`): a closed write becomes a durable pending change
+  (`<cache>/pending/<uid>/content-<gen>` + `meta.json`), served as the file's content, uploaded
+  at once when online and otherwise retried with backoff (5 s … 5 min) by the syncer. Survives
+  restarts; corrupt entries are set aside under `pending/lost`, never deleted. Deleting a file
+  with a pending change keeps the copy under `unsynced/`.
+* **Conflicts**: the upload re-lists the parent; a remote revision different from the edit's
+  base revision makes the local content a sibling `name (conflict <date>)<ext>` (CLI rename
+  strategy) and keeps the remote version. Neither side is ever overwritten silently.
+* **Pins** (`pins.go`, `<cache>/pins.json`): files or folders kept on this device; the pin loop
+  (default every minute, on demand via `user.quark.sync`) walks pinned folders, downloads what is
+  missing or changed, and protects it from eviction (plus any live inode under a pinned folder).
+* **Offline**: listings are saved per folder (`<cache>/listings`) and used when the CLI cannot
+  reach the server; cached and pending content is served; opening to overwrite never downloads
+  (atomic O_TRUNC negotiated with the kernel).
+* **Control surface**: extended attributes (`xattr.go`): `user.quark.state`, `.pin`, `.evict`,
+  `.error`, `.status` (JSON on the root), `.sync`. `quark-mount status|sync|pin|unpin|evict|state`
+  wrap them; the GNOME Files extension (`data/nautilus/quark-drive.py`, nautilus-python) adds
+  "Keep on This Device" / "Free Up Space" / "Sync Now" and emblems (`data/icons/emblems`).
+* Safety: names the CLI would sanitize are read-only; UID and type of a node are immutable;
+  shared listing slices are copy-on-write; the syncer only acts on journal entries and pins.
+* Tests: 19 on a real mount (pins across remount, eviction, pinned folder following remote
+  adds and new revisions offline, conflict copy, restart recovery with a corrupt journal entry,
+  removal keeping a copy, control attributes, truncate/fsync/statfs), `cmd/quark-mount` unit
+  tests, Python unit tests for the extension, and the sandboxed real-CLI round trip with pins.
+* Not yet: creating new files offline (needs local-only inodes), two-way sync of an unpinned
+  folder tree, Files sidebar entry via the cloud-providers D-Bus API.
+
 ### v1.1 candidates
 
 Photos/albums views; REPL-mode spike for latency (§9 R6); automatic CLI download with SHA-256

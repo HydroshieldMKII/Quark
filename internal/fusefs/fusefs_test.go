@@ -89,15 +89,38 @@ func mountFixture(t *testing.T, opts Options, seed func(f *fixture)) *fixture {
 	}
 	f.m = m
 	t.Cleanup(func() {
-		if err := m.Unmount(); err != nil {
+		if err := f.m.Unmount(); err != nil {
 			t.Errorf("unmount: %v", err)
 		}
-		m.Wait()
+		f.m.Wait()
 		if entries, _ := os.ReadDir(f.mnt); len(entries) != 0 {
 			t.Errorf("mount point not empty after unmount")
 		}
 	})
 	return f
+}
+
+// remount unmounts and mounts again on the same cache directory.
+func (f *fixture) remount(t *testing.T, opts Options) {
+	t.Helper()
+	if err := f.m.Unmount(); err != nil {
+		t.Fatalf("unmount: %v", err)
+	}
+	f.m.Wait()
+	opts.Backend = f.d
+	opts.CacheDir = f.cache
+	if opts.ListTTL == 0 {
+		opts.ListTTL = 200 * time.Millisecond
+	}
+	if os.Getenv("FUSEFS_DEBUG") != "" {
+		opts.Debug = true
+		opts.Logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	}
+	m, err := Mount(f.mnt, opts)
+	if err != nil {
+		t.Fatalf("remount: %v", err)
+	}
+	f.m = m
 }
 
 func seedBasic(f *fixture) {
@@ -341,8 +364,9 @@ func TestReadOnlyMount(t *testing.T) {
 }
 
 func TestUploadFailureKeepsTheData(t *testing.T) {
-	f := mountFixture(t, Options{}, seedBasic)
-	fh, err := os.OpenFile(filepath.Join(f.mnt, "hello.txt"), os.O_WRONLY|os.O_TRUNC, 0)
+	f := mountFixture(t, Options{RetryBase: 50 * time.Millisecond}, seedBasic)
+	p := filepath.Join(f.mnt, "hello.txt")
+	fh, err := os.OpenFile(p, os.O_WRONLY|os.O_TRUNC, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -350,21 +374,79 @@ func TestUploadFailureKeepsTheData(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.d.SetFail(&pdcli.Error{Kind: pdcli.KindNetwork, Message: "Connection failed"})
-	err = fh.Close()
-	f.d.SetFail(nil)
-	if !errors.Is(err, syscall.EAGAIN) && !errors.Is(err, syscall.EIO) {
-		t.Fatalf("close did not report the failed upload: %v", err)
-	}
-	kept, _ := filepath.Glob(filepath.Join(f.cache, "unsynced", "*hello.txt"))
-	if len(kept) != 1 {
-		t.Fatalf("unsynced copy not kept: %v", kept)
-	}
-	if b, _ := os.ReadFile(kept[0]); string(b) != "precious" {
-		t.Fatalf("kept copy = %q", b)
+	// The close succeeds: the change is journaled and retried later.
+	if err := fh.Close(); err != nil {
+		t.Fatalf("close failed although the change was journaled: %v", err)
 	}
 	h, _ := f.d.Find("", "hello.txt")
 	if c, _ := f.d.Content(h.UID); string(c) != "hello, world\n" {
 		t.Fatalf("remote changed despite the failure: %q", c)
+	}
+	// The local view shows the change, with its state.
+	if b, err := os.ReadFile(p); err != nil || string(b) != "precious" {
+		t.Fatalf("pending content not served: %q, %v", b, err)
+	}
+	if st, _ := os.Stat(p); st.Size() != 8 {
+		t.Fatalf("size = %d, want the pending size", st.Size())
+	}
+	if got := xattr(t, p, xaState); got != StateError && got != StatePending {
+		t.Fatalf("state = %q", got)
+	}
+	if e := xattr(t, p, xaError); !strings.Contains(e, "Connection failed") {
+		t.Fatalf("error attribute = %q", e)
+	}
+	if st := f.m.Status(); st.Pending != 1 || st.PendingBytes != 8 {
+		t.Fatalf("status = %+v", st)
+	}
+	// Editing again while offline chains on the pending content.
+	if err := os.WriteFile(p, []byte("precious v2"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Back online: the retry uploads the latest content as a new version.
+	f.d.SetFail(nil)
+	waitFor(t, 5*time.Second, func() bool {
+		c, _ := f.d.Content(h.UID)
+		return string(c) == "precious v2"
+	})
+	waitFor(t, 2*time.Second, func() bool { return xattr(t, p, xaState) == StateCached })
+	if st := f.m.Status(); st.Pending != 0 || st.Errors != 0 {
+		t.Fatalf("status after retry = %+v", st)
+	}
+	if entries, _ := os.ReadDir(filepath.Join(f.cache, "pending")); len(entries) != 0 {
+		t.Fatalf("journal not emptied: %v", entries)
+	}
+	if kept, _ := filepath.Glob(filepath.Join(f.cache, "unsynced", "*")); len(kept) != 0 {
+		t.Fatalf("unsynced copies made although nothing was lost: %v", kept)
+	}
+}
+
+// xattr reads a user.quark attribute of path ("" when absent).
+func xattr(t *testing.T, path, name string) string {
+	t.Helper()
+	buf := make([]byte, 4096)
+	n, err := syscall.Getxattr(path, name, buf)
+	if err != nil {
+		if errors.Is(err, syscall.ENODATA) || errors.Is(err, syscall.ENOENT) {
+			return ""
+		}
+		t.Fatalf("getxattr %s %s: %v", path, name, err)
+	}
+	return string(buf[:n])
+}
+
+func setxattr(t *testing.T, path, name, value string) error {
+	t.Helper()
+	return syscall.Setxattr(path, name, []byte(value), 0)
+}
+
+func waitFor(t *testing.T, d time.Duration, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(d)
+	for !cond() {
+		if time.Now().After(deadline) {
+			t.Fatal("condition not met in time")
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
 }
 

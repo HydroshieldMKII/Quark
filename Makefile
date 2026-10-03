@@ -31,7 +31,7 @@ build:
 run: build
 	./$(BIN) -v
 
-test: test-core
+test: test-core test-nautilus
 
 test-core:
 	$(GO) test -race -count=1 -shuffle=on -coverprofile=coverage.out $(CORE_PKGS)
@@ -112,7 +112,16 @@ install-mount:
 	install -Dm755 bin/quark-mount $(USER_PREFIX)/bin/quark-mount
 	install -Dm644 data/quark-mount.service $${XDG_CONFIG_HOME:-$$HOME/.config}/systemd/user/quark-mount.service
 	systemctl --user daemon-reload
+	# GNOME Files integration (menu + emblems); needs the nautilus-python package.
+	install -Dm644 data/nautilus/quark-drive.py $${XDG_DATA_HOME:-$$HOME/.local/share}/nautilus-python/extensions/quark-drive.py
+	for f in data/icons/emblems/*.svg; do \
+		install -Dm644 $$f $${XDG_DATA_HOME:-$$HOME/.local/share}/icons/hicolor/scalable/emblems/$$(basename $$f); done
 	@echo "Start the folder with: systemctl --user enable --now quark-mount   (mounts ~/ProtonDrive)"
+	@echo "Files picks up the menu and emblems after: nautilus -q"
+
+# Tests of the Files extension's logic (no GNOME needed).
+test-nautilus:
+	python3 -m unittest discover -s data/nautilus -p 'test_*.py'
 
 uninstall-user:
 	rm -f $(USER_PREFIX)/bin/quark $(USER_PREFIX)/share/applications/$(APP_ID).desktop \

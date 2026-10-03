@@ -22,20 +22,39 @@ mutter.
 
 ## Proton Drive as a folder
 
-`quark-mount` shows your drive as a folder for Files and any other program:
+`quark-mount` shows your drive as a folder for Files and any other program, files on demand with
+offline copies of what you pin:
 
 ```bash
-make install-mount                 # installs ~/.local/bin/quark-mount
-mkdir -p ~/ProtonDrive && quark-mount ~/ProtonDrive
+make install-mount                          # ~/.local/bin/quark-mount, a user service, the Files extension
+systemctl --user enable --now quark-mount   # mounts ~/ProtonDrive now and at every login
+nautilus -q                                 # Files reloads with the Quark menu and emblems
 ```
 
-Files download when opened and upload as a new version when closed, so changes made in the
-folder are live, with no separate sync step. Deleting moves to the trash. Rename over an existing
-file works like on a local disk (the old file goes to the trash). If an upload fails, the data is
-kept under `~/.cache/quark/mount/unsynced` and the program closing the file gets an error.
-`data/quark-mount.service` mounts it at login. The mount runs on the host: FUSE is not available
-inside the Flatpak sandbox, so it uses the `proton-drive` CLI from your PATH and its own sign-in
-(`proton-drive auth login`).
+How it behaves:
+
+- **Files download when opened** and stay in a bounded cache (1 GiB by default, oldest dropped
+  first). Folder listings are saved too, so the tree stays browsable offline after a restart.
+- **Saving uploads a new version.** The change is journaled on disk first, so the save never
+  fails for lack of network: offline changes upload when the connection is back, with retries.
+  If the file changed on Proton Drive meanwhile, your version is uploaded next to it as
+  `name (conflict 2026-10-03 14-05).ext` and nothing is lost.
+- **Keep on this device**: right-click a file or folder in Files (or `quark-mount pin PATH`).
+  Pinned content is downloaded in the background, kept up to date when it changes remotely,
+  and never evicted. **Free up space** drops a local copy.
+- **Emblems** in Files: green check = on this device, grey check = cached, blue cloud = online
+  only, orange arrow = waiting for upload or downloading, red = upload failed (will retry).
+- Deleting moves to the trash. Renaming over an existing file works like on a local disk.
+  Files whose names contain characters invalid on Linux (`: * ? " < > |`) are shown with `_`
+  and are read-only.
+- `quark-mount status ~/ProtonDrive` shows pending changes, pins and cache use;
+  `quark-mount sync ~/ProtonDrive` retries now. Everything is also reachable from any program
+  through extended attributes (`user.quark.state`, `user.quark.pin`, …).
+
+Limits for now: creating a *new* file needs the connection (editing existing ones does not);
+the mount runs on the host (FUSE is not available inside the Flatpak sandbox) with the
+`proton-drive` CLI from your PATH and its own sign-in (`proton-drive auth login`). Copies that
+could not be kept in the journal land in `~/.cache/quark/mount/unsynced`.
 
 ## License
 
