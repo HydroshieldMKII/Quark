@@ -665,7 +665,8 @@ func (v *filesView) updateActions() {
 	enable("delete-forever", len(sel) > 0 && inTrash)
 	enable("empty-trash", inTrash && st.Total > 0)
 	enable("copy-name", len(sel) > 0)
-	enable("share", len(sel) == 1 && !inTrash && !(v.section == drive.SectionDevices && st.Location.IsRoot()))
+	deviceRoot := v.section == drive.SectionDevices && st.Location.IsRoot()
+	enable("share", len(sel) == 1 && !inTrash && !deviceRoot)
 	enable("leave", len(sel) == 1 && sharedRoot)
 	if v.emptyBtn != nil {
 		v.emptyBtn.SetSensitive(st.Total > 0)
