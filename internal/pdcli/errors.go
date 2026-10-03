@@ -130,6 +130,8 @@ type rule struct {
 // on distinctive phrases so that user-controlled text (file names) is unlikely to match.
 var classification = []rule{
 	{KindNotLoggedIn, regexp.MustCompile(`^You need to login first`)},
+	// Operations the CLI does not support for a path (recorded with 0.8.0).
+	{KindUsage, regexp.MustCompile(`^(Listing children of trashed folder is not supported|Browsing trashed folders is not supported|Listing photos of trashed albums is not supported|Use direct path to list children of shared node|Use albums photos command|Path ".*" (is )?not supported|You can permanently delete items only from trash|Operation across Drive and Photos is not supported|Cannot move nodes between different users)`)},
 	{KindUsage, regexp.MustCompile(`^(Command not found:|Expected \d+ arguments, got \d+|Missing required option:|Unknown option '|Option '.*' argument (missing|ambiguous)|Unexpected argument '|Invalid conflict strategy "|Ambiguous conflict strategy "|Invalid node type:|Invalid role:|Invalid expiration date:|Invalid invitation UID:|Cannot specify name when copying multiple files|At least one )`)},
 	// Not-found messages embed the user's file name ("Node not found: <name>"), so they
 	// must be matched before any rule that is not anchored at the start.

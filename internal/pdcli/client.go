@@ -21,11 +21,15 @@ type Client struct {
 	MetaTimeout time.Duration
 	// LoginTimeout bounds the browser sign-in (default 10 minutes).
 	LoginTimeout time.Duration
+	// ListTimeout bounds folder listings (default 10 minutes): the CLI
+	// decrypts every item, and a large trash took over a minute in testing.
+	// Navigating away cancels a listing, so a generous limit costs nothing.
+	ListTimeout time.Duration
 }
 
 // NewClient returns a Client using r.
 func NewClient(r Runner) *Client {
-	return &Client{runner: r, MetaTimeout: 2 * time.Minute, LoginTimeout: 10 * time.Minute}
+	return &Client{runner: r, MetaTimeout: 2 * time.Minute, LoginTimeout: 10 * time.Minute, ListTimeout: 10 * time.Minute}
 }
 
 func usageErr(command, format string, args ...any) error {
@@ -101,11 +105,11 @@ func (c *Client) List(ctx context.Context, path string) ([]drive.Node, error) {
 	if path == "/" || path == drive.SectionDevices.Root() {
 		return nil, usageErr(cmd, "use Roots or Devices for %s", path)
 	}
-	out, err := c.meta(ctx, ListMaxStdout, argv("filesystem", "list", nil, path))
+	res, err := c.runner.Run(ctx, Request{Args: argv("filesystem", "list", nil, path), Timeout: c.ListTimeout, MaxStdout: ListMaxStdout})
 	if err != nil {
 		return nil, err
 	}
-	return ParseNodes(out)
+	return ParseNodes(res.Stdout)
 }
 
 // Devices lists synced computers.

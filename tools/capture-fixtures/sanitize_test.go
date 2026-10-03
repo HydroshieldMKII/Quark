@@ -136,3 +136,23 @@ func TestPlanPassesSandboxGuard(t *testing.T) {
 		}
 	}
 }
+
+func TestSanitizeForeignListingIsCapped(t *testing.T) {
+	s := NewSanitizer(realToken)
+	var b strings.Builder
+	b.WriteString("[\n")
+	for i := 0; i < 50; i++ {
+		if i > 0 {
+			b.WriteString(",\n")
+		}
+		b.WriteString(`{"uid":"x","type":"file"}`)
+	}
+	b.WriteString("\n]\n")
+	out := string(s.Output([]byte(b.String()), Foreign))
+	if n := strings.Count(out, `"type":"file"`); n != MaxForeignItems {
+		t.Fatalf("kept %d items, want %d", n, MaxForeignItems)
+	}
+	if n := strings.Count(string(s.Output([]byte(b.String()), Sandbox)), `"type":"file"`); n != 50 {
+		t.Fatalf("sandbox output capped: %d", n)
+	}
+}

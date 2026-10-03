@@ -71,8 +71,8 @@ func TestClientMetadataCommands(t *testing.T) {
 		t.Fatalf("list = %v, %v", nodes, err)
 	}
 	wantArgs(t, m, "filesystem", "list", "--json", "--", "/my-files/"+uid1)
-	if m.last(t).MaxStdout != ListMaxStdout {
-		t.Errorf("list MaxStdout = %d", m.last(t).MaxStdout)
+	if m.last(t).MaxStdout != ListMaxStdout || m.last(t).Timeout != 10*time.Minute {
+		t.Errorf("list MaxStdout = %d, timeout = %s", m.last(t).MaxStdout, m.last(t).Timeout)
 	}
 
 	m = ok(string(sample(t, "devices.json")))

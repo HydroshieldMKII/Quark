@@ -1,0 +1,3 @@
+[
+{"creationTime":"2026-10-03T17:16:42.000Z","directRole":"admin","folder":{"isImported":false},"isShared":false,"isSharedByUrl":false,"keyAuthor":{"ok":true,"value":"user1@example.com"},"modificationTime":"2026-10-03T17:17:30.000Z","name":{"ok":true,"value":"_quark-test-20260101T000000-000000000000-dir"},"nameAuthor":{"ok":true,"value":"user1@example.com"},"ownedBy":{"email":"user1@example.com"},"parentUid":"AAAAAAAAAAAAAAAAAAAAAA~0000000000000000004950","treeEventScopeId":"opaque-1","type":"folder","uid":"AAAAAAAAAAAAAAAAAAAAAA~0000000000000000004946"}
+]

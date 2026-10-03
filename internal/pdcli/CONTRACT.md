@@ -1,5 +1,10 @@
 # Proton Drive CLI contract (as used by Quark)
 
+**Verified against the real CLI on 2026-10-03** (`testdata/cli/0.8.0/`, 39 recorded steps, all
+as expected; `fixtures_test.go` replays them). Additions seen in real output: `urlAccess.creatorEmail`,
+device `hasDeprecatedName`. Measured: listing a trash of ~4,900 items took 1–2 minutes, produced
+4.7 MB of JSON and used ~360 MB of memory in one CLI process.
+
 Source of truth: the CLI's own source code, MIT-licensed, at
 `https://github.com/ProtonDriveApps/sdk` tag `js/v0.21.1` (`cli/` = cli-drive 0.8.0, SDK js 0.21.0),
 read on 2026-10-03. Recorded fixtures under `testdata/cli/0.8.0/` confirm or override this file.

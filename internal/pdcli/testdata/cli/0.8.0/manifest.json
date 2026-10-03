@@ -1,0 +1,531 @@
+{
+  "cli": "cli-drive@0.8.0+06e8c605",
+  "sdk": "js@0.21.0+06e8c605",
+  "captured": "2026-10-03",
+  "steps": [
+    {
+      "name": "version",
+      "args": [
+        "--version"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "list-root",
+      "args": [
+        "filesystem",
+        "list",
+        "--json",
+        "--",
+        "/"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "list-trash",
+      "args": [
+        "filesystem",
+        "list",
+        "--json",
+        "--",
+        "/trash"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "list-shared-with-me",
+      "args": [
+        "filesystem",
+        "list",
+        "--json",
+        "--",
+        "/shared-with-me"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "list-shared-by-me",
+      "args": [
+        "filesystem",
+        "list",
+        "--json",
+        "--",
+        "/shared-by-me"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "list-devices",
+      "args": [
+        "filesystem",
+        "list",
+        "--json",
+        "--",
+        "/devices"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "invitation-list",
+      "args": [
+        "invitation",
+        "list",
+        "--json",
+        "--"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "create-folder",
+      "args": [
+        "filesystem",
+        "create-folder",
+        "--json",
+        "--",
+        "/my-files",
+        "_quark-test-20260101T000000-000000000000"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "upload",
+      "args": [
+        "filesystem",
+        "upload",
+        "--json",
+        "-f",
+        "rename",
+        "-d",
+        "merge",
+        "--",
+        "/tmp/quark-fixtures/_quark-test-20260101T000000-000000000000-a.txt",
+        "/tmp/quark-fixtures/_quark-test-20260101T000000-000000000000-b.bin",
+        "/tmp/quark-fixtures/_quark-test-20260101T000000-000000000000-dir",
+        "/my-files/_quark-test-20260101T000000-000000000000"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "upload-identical-skipped",
+      "args": [
+        "filesystem",
+        "upload",
+        "--json",
+        "-f",
+        "rename",
+        "-d",
+        "merge",
+        "--",
+        "/tmp/quark-fixtures/_quark-test-20260101T000000-000000000000-a.txt",
+        "/my-files/_quark-test-20260101T000000-000000000000"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "upload-conflict-unforced",
+      "args": [
+        "filesystem",
+        "upload",
+        "--json",
+        "--",
+        "/tmp/quark-fixtures/v2/_quark-test-20260101T000000-000000000000-a.txt",
+        "/my-files/_quark-test-20260101T000000-000000000000"
+      ],
+      "expect": "fail",
+      "exit": 1,
+      "kind": "partial",
+      "comment": "conflict without strategy in JSON mode"
+    },
+    {
+      "name": "upload-conflict-rename",
+      "args": [
+        "filesystem",
+        "upload",
+        "--json",
+        "-f",
+        "rename",
+        "-d",
+        "merge",
+        "--",
+        "/tmp/quark-fixtures/v2/_quark-test-20260101T000000-000000000000-a.txt",
+        "/my-files/_quark-test-20260101T000000-000000000000"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "upload-conflict-revision",
+      "args": [
+        "filesystem",
+        "upload",
+        "--json",
+        "-f",
+        "create-new-revision",
+        "-d",
+        "merge",
+        "--",
+        "/tmp/quark-fixtures/v2/_quark-test-20260101T000000-000000000000-a.txt",
+        "/my-files/_quark-test-20260101T000000-000000000000"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "list-sandbox",
+      "args": [
+        "filesystem",
+        "list",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "list-folder-filter",
+      "args": [
+        "filesystem",
+        "list",
+        "--json",
+        "-t",
+        "folder",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "info-file",
+      "args": [
+        "filesystem",
+        "info",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-a.txt"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "info-folder",
+      "args": [
+        "filesystem",
+        "info",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-dir"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "create-folder-sub",
+      "args": [
+        "filesystem",
+        "create-folder",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000",
+        "_quark-test-20260101T000000-000000000000-sub"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "create-folder-duplicate",
+      "args": [
+        "filesystem",
+        "create-folder",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000",
+        "_quark-test-20260101T000000-000000000000-sub"
+      ],
+      "expect": "fail",
+      "exit": 1,
+      "kind": "conflict"
+    },
+    {
+      "name": "rename",
+      "args": [
+        "filesystem",
+        "rename",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-a.txt",
+        "_quark-test-20260101T000000-000000000000-renamed.txt"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "copy",
+      "args": [
+        "filesystem",
+        "copy",
+        "--json",
+        "-n",
+        "_quark-test-20260101T000000-000000000000-copy.txt",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-renamed.txt",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-sub"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "move",
+      "args": [
+        "filesystem",
+        "move",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-dir",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-sub"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "sharing-status-unshared",
+      "args": [
+        "sharing",
+        "status",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-b.bin"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "sharing-set-url",
+      "args": [
+        "sharing",
+        "set-url",
+        "--json",
+        "--role",
+        "viewer",
+        "--expiration",
+        "2026-10-10",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-renamed.txt"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "sharing-status-shared",
+      "args": [
+        "sharing",
+        "status",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-renamed.txt"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "list-shared-by-me-after",
+      "args": [
+        "filesystem",
+        "list",
+        "--json",
+        "--",
+        "/shared-by-me"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "download",
+      "args": [
+        "filesystem",
+        "download",
+        "--json",
+        "-f",
+        "rename",
+        "-d",
+        "merge",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-sub",
+        "/tmp/quark-fixtures/out"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "download-again-skip",
+      "args": [
+        "filesystem",
+        "download",
+        "--json",
+        "-f",
+        "skip",
+        "-d",
+        "merge",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-sub",
+        "/tmp/quark-fixtures/out"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "trash",
+      "args": [
+        "filesystem",
+        "trash",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-sub/_quark-test-20260101T000000-000000000000-copy.txt"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "restore",
+      "args": [
+        "filesystem",
+        "restore",
+        "--json",
+        "--",
+        "/trash/_quark-test-20260101T000000-000000000000-copy.txt"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "trash-again",
+      "args": [
+        "filesystem",
+        "trash",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-sub/_quark-test-20260101T000000-000000000000-copy.txt"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "delete",
+      "args": [
+        "filesystem",
+        "delete",
+        "--json",
+        "--",
+        "/trash/_quark-test-20260101T000000-000000000000-copy.txt"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "err-info-not-found",
+      "args": [
+        "filesystem",
+        "info",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-missing"
+      ],
+      "expect": "fail",
+      "exit": 1,
+      "kind": "not-found"
+    },
+    {
+      "name": "err-rename-not-found",
+      "args": [
+        "filesystem",
+        "rename",
+        "--json",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-missing",
+        "_quark-test-20260101T000000-000000000000-x"
+      ],
+      "expect": "fail",
+      "exit": 1,
+      "kind": "not-found"
+    },
+    {
+      "name": "err-delete-not-trashed",
+      "args": [
+        "filesystem",
+        "delete",
+        "--json",
+        "--",
+        "/trash/_quark-test-20260101T000000-000000000000-never-trashed"
+      ],
+      "expect": "fail",
+      "exit": 1,
+      "kind": "not-found"
+    },
+    {
+      "name": "err-list-trash-child",
+      "args": [
+        "filesystem",
+        "list",
+        "--json",
+        "--",
+        "/trash/_quark-test-20260101T000000-000000000000-x"
+      ],
+      "expect": "fail",
+      "exit": 1,
+      "kind": "unknown"
+    },
+    {
+      "name": "err-download-not-found",
+      "args": [
+        "filesystem",
+        "download",
+        "--json",
+        "-f",
+        "skip",
+        "-d",
+        "skip",
+        "--",
+        "/my-files/_quark-test-20260101T000000-000000000000/_quark-test-20260101T000000-000000000000-missing",
+        "/tmp/quark-fixtures/out"
+      ],
+      "expect": "fail",
+      "exit": 1,
+      "kind": "not-found"
+    },
+    {
+      "name": "info-by-uid",
+      "args": [
+        "filesystem",
+        "info",
+        "--json",
+        "--",
+        "/my-files/AAAAAAAAAAAAAAAAAAAAAA~0000000000000000004948"
+      ],
+      "expect": "ok",
+      "exit": 0
+    },
+    {
+      "name": "list-by-uid",
+      "args": [
+        "filesystem",
+        "list",
+        "--json",
+        "--",
+        "/my-files/AAAAAAAAAAAAAAAAAAAAAA~0000000000000000004950"
+      ],
+      "expect": "ok",
+      "exit": 0
+    }
+  ]
+}

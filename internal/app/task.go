@@ -22,10 +22,11 @@ func (l limiter) acquire(ctx context.Context) error {
 
 func (l limiter) release() { <-l }
 
-// Concurrency caps for CLI processes (constitution, Principle II). Each CLI
-// process uses about 125 MB, and processes share the CLI's SQLite caches.
+// Concurrency caps for CLI processes (constitution, Principle II). A CLI
+// process uses 125 MB idle and ~360 MB listing a large folder (measured),
+// and processes share the CLI's SQLite caches.
 const (
-	maxReads  = 3
+	maxReads  = 2
 	maxWrites = 1
 )
 

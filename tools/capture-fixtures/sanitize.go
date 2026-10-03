@@ -9,6 +9,9 @@ import (
 	"strings"
 )
 
+// MaxForeignItems caps how many items of a Foreign listing are kept.
+const MaxForeignItems = 20
+
 // FixedToken replaces the run's real sandbox token so fixtures are deterministic.
 const FixedToken = "_quark-test-20260101T000000-000000000000"
 
@@ -117,6 +120,11 @@ func (s *Sanitizer) Output(out []byte, mode Mode) []byte {
 		return []byte(s.Text(string(out)))
 	}
 	if arr, ok := v.([]any); ok {
+		// Listings of the owner's real data keep only a few items: the tests
+		// need the structure, not how much the account holds.
+		if mode == Foreign && len(arr) > MaxForeignItems {
+			arr = arr[:MaxForeignItems]
+		}
 		var b bytes.Buffer
 		b.WriteString("[\n")
 		for i, item := range arr {

@@ -23,7 +23,7 @@ test strategy, methodology (GitHub Spec Kit) and milestones to follow.
 7. Destructive actions confirm first.
 8. Settings and queue files are written atomically; a corrupt file is renamed aside, never fatal.
 9. Startup never blocks on the network: the window shows within 300 ms with a loading state.
-10. Memory: at most 2 transfer + 3 read + 1 write CLI processes at any time.
+10. Memory: at most 2 transfer + 2 read + 1 write CLI processes at any time.
 
 ## Import rules
 

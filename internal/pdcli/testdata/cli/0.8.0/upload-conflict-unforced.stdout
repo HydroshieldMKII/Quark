@@ -1,0 +1,1 @@
+{"failedItems":1,"failures":[{"error":"ValidationError: Name conflict on \"_quark-test-20260101T000000-000000000000-a.txt\" (file) already exists","name":"_quark-test-20260101T000000-000000000000-a.txt"}],"skippedItems":0,"transferredBytes":0,"transferredItems":0}

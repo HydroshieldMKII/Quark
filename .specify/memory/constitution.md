@@ -37,7 +37,7 @@ Quark and its tooling operate on a real Proton account with real files.
 - Panics in background work are recovered, logged and surfaced; they never kill the process.
 - Settings and queue files are written atomically; a corrupt file is moved aside, never fatal.
 - Startup never blocks on the network; the window appears with a loading state.
-- Concurrency caps: at most 2 transfer, 3 read and 1 write CLI processes at once.
+- Concurrency caps: at most 2 transfer, 2 read and 1 write CLI processes at once.
 
 ### III. The CLI Is the Only Backend
 

@@ -147,8 +147,10 @@ reference for parsers. Findings that change the design:
 * Options must follow `<group> <command>`.
 * Official builds send crash reports and metrics to Proton. Mention it in the About dialog.
 
-Still to confirm with recorded fixtures after login: real payloads for every shape and the exact
-stderr wording of network and permission errors.
+Confirmed on 2026-10-03 with recorded fixtures (`internal/pdcli/testdata/cli/0.8.0`): every shape
+and error above matches. Not yet seen in real output: network and permission errors (they need a
+broken connection or a foreign share to provoke). Measured: a ~4,900-item trash takes 1–2 minutes
+to list and ~360 MB of memory, so listings get a 10-minute limit and at most 2 run at once.
 
 ### 1.8 Library versions chosen
 
@@ -458,7 +460,7 @@ outside `must*` constructors in `ui`).
 7. Destructive actions (trash, delete, empty trash, remove member, remove link, logout) confirm first.
 8. Settings and queue files are written atomically; a corrupt file is renamed aside, never fatal.
 9. Startup never blocks on the network: the window shows within 300 ms with a loading state.
-10. Memory: at most 2 transfer + 3 read + 1 write CLI processes at any time.
+10. Memory: at most 2 transfer + 2 read + 1 write CLI processes at any time.
 
 ---
 
