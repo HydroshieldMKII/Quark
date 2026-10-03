@@ -4,7 +4,7 @@
 # -devel packages on the host. Usage: build/sdk-run.sh go build ./cmd/quark
 set -euo pipefail
 GO_ROOT="${GOROOT_HOST:-$HOME/.local/go}"
-exec flatpak run --filesystem=home --share=network --socket=wayland --device=dri \
+exec flatpak run --no-documents-portal --filesystem=home --share=network --socket=wayland --device=dri \
 	--env=PATH="$GO_ROOT/bin:$HOME/go/bin:/usr/bin:/bin" \
 	--env=GOPATH="$HOME/go" --env=GOCACHE="$HOME/.cache/go-build" \
 	--env=GOFLAGS="${GOFLAGS:-}" --env=CGO_ENABLED=1 \
