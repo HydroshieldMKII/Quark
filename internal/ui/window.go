@@ -34,12 +34,12 @@ type place struct {
 }
 
 var places = []place{
-	{"my-files", "My files", "user-home-symbolic", drive.SectionMyFiles},
-	{"shared-with-me", "Shared with me", "folder-publicshare-symbolic", drive.SectionSharedWithMe},
-	{"shared-by-me", "Shared by me", "send-to-symbolic", drive.SectionSharedByMe},
-	{"devices", "Computers", "computer-symbolic", drive.SectionDevices},
-	{"trash", "Trash", "user-trash-symbolic", drive.SectionTrash},
-	{"transfers", "Transfers", "network-transmit-receive-symbolic", ""},
+	{"my-files", i18n.M("My files"), "user-home-symbolic", drive.SectionMyFiles},
+	{"shared-with-me", i18n.M("Shared with me"), "folder-publicshare-symbolic", drive.SectionSharedWithMe},
+	{"shared-by-me", i18n.M("Shared by me"), "send-to-symbolic", drive.SectionSharedByMe},
+	{"devices", i18n.M("Computers"), "computer-symbolic", drive.SectionDevices},
+	{"trash", i18n.M("Trash"), "user-trash-symbolic", drive.SectionTrash},
+	{"transfers", i18n.M("Transfers"), "network-transmit-receive-symbolic", ""},
 }
 
 type window struct {

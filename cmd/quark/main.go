@@ -13,6 +13,7 @@ import (
 
 	"example.org/quark/internal/app"
 	"example.org/quark/internal/app/demo"
+	"example.org/quark/internal/i18n"
 	"example.org/quark/internal/jobs"
 	"example.org/quark/internal/pdcli"
 	"example.org/quark/internal/settings"
@@ -36,6 +37,7 @@ func run() int {
 	shotSection := flag.String("screenshot-section", "", "debug: sidebar entry to show before the screenshot")
 	shotSize := flag.String("screenshot-size", "", "debug: window size for the screenshot, e.g. 1100x720")
 	flag.Parse()
+	i18n.Init()
 	if *showVersion {
 		fmt.Println("Quark", version)
 		return 0

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.example.Quark</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Quark</name>
+  <summary>Unofficial client for Proton Drive</summary>
+  <description>
+    <p>
+      Quark lets you browse, upload, download and share the files in your Proton Drive from a
+      native GNOME app. It works through the official Proton Drive command-line tool, so your
+      files stay end-to-end encrypted and your password is only ever entered on Proton's website.
+    </p>
+    <ul>
+      <li>Browse My files, items shared with you, your computers and the trash</li>
+      <li>Upload with drag and drop, download, rename, move, copy, trash and restore</li>
+      <li>Share with a link or with people, and answer invitations</li>
+      <li>Transfers keep going in the background, with a status icon in the top bar</li>
+    </ul>
+    <p>Quark is not affiliated with or endorsed by Proton AG.</p>
+  </description>
+  <launchable type="desktop-id">org.example.Quark.desktop</launchable>
+  <developer id="org.example">
+    <name>Quark contributors</name>
+  </developer>
+  <content_rating type="oars-1.1"/>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <branding>
+    <color type="primary" scheme_preference="light">#c9b6f7</color>
+    <color type="primary" scheme_preference="dark">#3d2380</color>
+  </branding>
+  <releases>
+    <release version="0.1.0" date="2026-10-03">
+      <description>
+        <p>First release: browsing, transfers, sharing, invitations and background mode.</p>
+      </description>
+    </release>
+  </releases>
+</component>

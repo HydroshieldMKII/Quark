@@ -1,0 +1,67 @@
+# Flatpak manifest for Quark. Build and install for the current user with:
+#   make flatpak
+# The Go module download needs network during the build (fine for local
+# builds; a Flathub submission would vendor the modules instead).
+app-id: org.example.Quark
+runtime: org.gnome.Platform
+runtime-version: '50'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.golang
+command: quark
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+  # Proton Drive is a network service.
+  - --share=network
+  # The CLI keeps its session in the Secret Service (GNOME Keyring).
+  - --talk-name=org.freedesktop.secrets
+  # Tray icon (StatusNotifierItem) for the GNOME AppIndicator extension, KDE, ...
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --own-name=org.kde.*
+  # No filesystem access: files are picked through the portal file chooser.
+modules:
+  - name: proton-drive-cli
+    buildsystem: simple
+    sources:
+      - type: file
+        url: https://proton.me/download/drive/cli/0.8.0/linux-x64/proton-drive
+        sha512: cf61c2688c45e1055d8add6221d9471a5a5b64bf3bcdb86460f5cb18414596cc4df3cdb6627c9097c94bec32a3c9915ada3211ef2ae5be33c46ebbc996ccaa28
+        dest-filename: proton-drive
+        only-arches: [x86_64]
+      - type: file
+        url: https://raw.githubusercontent.com/ProtonDriveApps/sdk/refs/tags/js/v0.21.1/LICENSE.md
+        sha256: 0ce1c7dc272b2b5f86de58045d87dbfdec582fdce352a4a41cc8c56bff51c6f5
+        dest-filename: proton-drive-cli-LICENSE.md
+    build-commands:
+      - install -Dm755 proton-drive /app/bin/proton-drive
+      - install -Dm644 proton-drive-cli-LICENSE.md /app/share/licenses/org.example.Quark/proton-drive-cli-LICENSE.md
+
+  - name: quark
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/golang/bin
+      build-args:
+        - --share=network
+      env:
+        GOTOOLCHAIN: local
+        CGO_ENABLED: '1'
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - bin
+          - build-dir
+          - .flatpak-builder
+          - .git
+          - coverage.out
+          - coverage-tray.out
+    build-commands:
+      - go build -trimpath -ldflags "-X main.version=0.1.0" -o /app/bin/quark ./cmd/quark
+      - install -Dm644 data/org.example.Quark.desktop /app/share/applications/org.example.Quark.desktop
+      - install -Dm644 data/org.example.Quark.metainfo.xml /app/share/metainfo/org.example.Quark.metainfo.xml
+      - install -Dm644 data/icons/hicolor/scalable/apps/org.example.Quark.svg /app/share/icons/hicolor/scalable/apps/org.example.Quark.svg
+      - install -Dm644 data/icons/hicolor/symbolic/apps/org.example.Quark-symbolic.svg /app/share/icons/hicolor/symbolic/apps/org.example.Quark-symbolic.svg
+      - install -Dm644 LICENSE /app/share/licenses/org.example.Quark/LICENSE

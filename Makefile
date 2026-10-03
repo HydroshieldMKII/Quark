@@ -20,7 +20,7 @@ IN_SDK    := build/sdk-run.sh
 endif
 CORE_DIRS := $(shell $(GO) list -f '{{.Dir}}' $(CORE_PKGS) 2>/dev/null | sed "s|$$(pwd)/|./|")
 
-.PHONY: install-user uninstall-user all build run test test-core test-ui cover lint fmt vuln fuzz soak fixtures e2e flatpak clean deps-check
+.PHONY: i18n install-user uninstall-user all build run test test-core test-ui cover lint fmt vuln fuzz soak fixtures e2e flatpak clean deps-check
 
 all: lint test
 
@@ -35,7 +35,7 @@ test: test-core
 test-core:
 	$(GO) test -race -count=1 -shuffle=on -coverprofile=coverage.out $(CORE_PKGS)
 	# The tray test needs its own session bus, never the desktop's.
-	dbus-run-session -- env QUARK_PRIVATE_BUS=1 $(GO) test -race -count=1 -coverprofile=coverage-tray.out ./internal/tray/
+	dbus-run-session -- env QUARK_PRIVATE_BUS=1 $(GO) test -race -count=1 -coverprofile=coverage-tray.out ./internal/tray/ ./internal/autostart/
 	$(GO) run ./tools/covercheck coverage.out coverage-tray.out
 
 # UI smoke tests: compiled (in the SDK if needed), then run on the host under
@@ -77,8 +77,12 @@ fixtures:
 e2e:
 	QUARK_E2E=1 $(GO) test -count=1 -v -timeout 30m ./e2e/...
 
+# Builds and installs the Flatpak for the current user. Uses flatpak-builder
+# from the host if present, else the org.flatpak.Builder Flatpak (no sudo).
+FLATPAK_BUILDER ?= $(shell command -v flatpak-builder 2>/dev/null || echo flatpak run --no-documents-portal org.flatpak.Builder)
 flatpak:
-	flatpak-builder --user --force-clean --install-deps-from=flathub build-dir build/flatpak/$(APP_ID).json
+	$(FLATPAK_BUILDER) --user --install --force-clean --install-deps-from=flathub \
+		build-dir build/flatpak/$(APP_ID).yml
 
 clean:
 	rm -rf bin coverage.out coverage.html build-dir .flatpak-builder
@@ -101,3 +105,7 @@ uninstall-user:
 	rm -f $(USER_PREFIX)/bin/quark $(USER_PREFIX)/share/applications/$(APP_ID).desktop \
 		$(ICONS)/scalable/apps/$(APP_ID).svg $(ICONS)/symbolic/apps/$(APP_ID)-symbolic.svg
 	-update-desktop-database -q $(USER_PREFIX)/share/applications
+
+# Regenerates the translation template after strings change.
+i18n:
+	$(GO) run ./tools/i18n-extract

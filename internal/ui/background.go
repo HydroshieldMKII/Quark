@@ -3,6 +3,7 @@ package ui
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 
@@ -67,6 +68,14 @@ func (w *window) onCloseRequest() bool {
 	}
 	w.win.SetVisible(false)
 	st := w.a.Settings()
+	if !st.BackgroundHintShown && autostart.InFlatpak() {
+		go func() {
+			if err := autostart.RequestBackground(T("Keep transfers going when the window is closed"),
+				st.StartAtLogin, []string{"quark", "--background"}, 2*time.Minute); err != nil {
+				w.log.Warn("background permission", "err", err)
+			}
+		}()
+	}
 	if !st.BackgroundHintShown {
 		st.BackgroundHintShown = true
 		w.a.UpdateSettings(st)
@@ -103,8 +112,13 @@ func (w *window) updateTray() {
 	w.tray.Update(s)
 }
 
-// setStartAtLogin creates or removes the autostart entry.
+// setStartAtLogin creates or removes the autostart entry. Inside Flatpak the
+// Background portal does it (and may ask the user).
 func (w *window) setStartAtLogin(on bool) error {
+	if autostart.InFlatpak() {
+		return autostart.RequestBackground(T("Keep transfers going and start at login"), on,
+			[]string{"quark", "--background"}, 2*time.Minute)
+	}
 	if !on {
 		return autostart.Disable(AppID)
 	}

@@ -56,6 +56,8 @@ linters:
         linters: [forbidigo, gosec, unparam, errcheck]
       - path: (cmd|tools)/
         linters: [forbidigo]
+      - path: internal/i18n/
+        linters: [misspell] # French translations
       - path: internal/testutil/
         linters: [forbidigo, gosec, errcheck, noctx]
 

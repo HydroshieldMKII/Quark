@@ -1,0 +1,1059 @@
+# French translation of Quark.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid " — %.0f%%"
+msgstr " — %.0f %%"
+
+msgid "%d"
+msgstr "%d"
+
+msgid "%d %s"
+msgstr "%d %s"
+
+msgid "%d %s %d"
+msgstr "%d %s %d"
+
+msgid "%d done"
+msgid_plural "%d done"
+msgstr[0] "%d terminé"
+msgstr[1] "%d terminés"
+
+msgid "%d done, %d failed"
+msgstr "%d terminé(s), %d échoué(s)"
+
+msgid "%d failed"
+msgid_plural "%d failed"
+msgstr[0] "%d échoué"
+msgstr[1] "%d échoués"
+
+msgid "%d in progress"
+msgid_plural "%d in progress"
+msgstr[0] "%d en cours"
+msgstr[1] "%d en cours"
+
+msgid "%d item could not be restored automatically; restore it from the trash"
+msgid_plural "%d items could not be restored automatically; restore them from the trash"
+msgstr[0] "%d élément n’a pas pu être restauré automatiquement ; restaurez-le depuis la corbeille"
+msgstr[1] "%d éléments n’ont pas pu être restaurés automatiquement ; restaurez-les depuis la corbeille"
+
+msgid "%d item will be deleted forever. This cannot be undone."
+msgid_plural "All %d items will be deleted forever. This cannot be undone."
+msgstr[0] "%d élément sera supprimé définitivement. Cette action est irréversible."
+msgstr[1] "Les %d éléments seront supprimés définitivement. Cette action est irréversible."
+
+msgid "%d items, %s"
+msgstr "%d éléments, %s"
+
+msgid "%d paused"
+msgid_plural "%d paused"
+msgstr[0] "%d en pause"
+msgstr[1] "%d en pause"
+
+msgid "%d pending invitation"
+msgid_plural "%d pending invitations"
+msgstr[0] "%d invitation en attente"
+msgstr[1] "%d invitations en attente"
+
+msgid "%d transfer failed"
+msgid_plural "%d transfers failed"
+msgstr[0] "%d transfert a échoué"
+msgstr[1] "%d transferts ont échoué"
+
+msgid "%d transfer in progress"
+msgid_plural "%d transfers in progress"
+msgstr[0] "%d transfert en cours"
+msgstr[1] "%d transferts en cours"
+
+msgid "%d transfer is still in progress and will be paused."
+msgid_plural "%d transfers are still in progress and will be paused."
+msgstr[0] "%d transfert est encore en cours et sera suspendu."
+msgstr[1] "%d transferts sont encore en cours et seront suspendus."
+
+msgid "%d transfer paused"
+msgid_plural "%d transfers paused"
+msgstr[0] "%d transfert suspendu"
+msgstr[1] "%d transferts suspendus"
+
+msgid "%d waiting"
+msgid_plural "%d waiting"
+msgstr[0] "%d en attente"
+msgstr[1] "%d en attente"
+
+msgid "%s (unverified)"
+msgstr "%s (non vérifié)"
+
+msgid "%s — retrying soon"
+msgstr "%s — nouvel essai bientôt"
+
+msgid "A folder cannot be moved into itself"
+msgstr "Un dossier ne peut pas être déplacé dans lui-même"
+
+msgid "About Quark"
+msgstr "À propos de Quark"
+
+msgid "Accept"
+msgstr "Accepter"
+
+msgid "Access"
+msgstr "Accès"
+
+msgid "Add as new version"
+msgstr "Ajouter comme nouvelle version"
+
+msgid "Add people by email"
+msgstr "Ajouter des personnes par courriel"
+
+msgid "Allow to Run"
+msgstr "Autoriser l’exécution"
+
+msgid "Already up to date"
+msgstr "Déjà à jour"
+
+msgid "An item with this name already exists here."
+msgstr "Un élément portant ce nom existe déjà ici."
+
+msgid "An unofficial client for Proton Drive. Quark is not affiliated with or endorsed by Proton AG."
+msgstr "Un client non officiel pour Proton Drive. Quark n’est ni affilié à Proton AG ni approuvé par Proton AG."
+
+msgid "Anyone using this link will lose access. People you invited keep theirs."
+msgstr "Toute personne utilisant ce lien perdra l’accès. Les personnes invitées conservent le leur."
+
+msgid "Anyone with the link can open this item."
+msgstr "Toute personne disposant du lien peut ouvrir cet élément."
+
+msgid "Apr"
+msgstr "avr."
+
+msgid "Aug"
+msgstr "août"
+
+msgid "Background"
+msgstr "Arrière-plan"
+
+msgid "CLI Log Detail"
+msgstr "Niveau de journal du CLI"
+
+msgid "Can edit"
+msgstr "Peut modifier"
+
+msgid "Can manage sharing"
+msgstr "Peut gérer le partage"
+
+msgid "Can view"
+msgstr "Peut consulter"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "Cancelled"
+msgstr "Annulé"
+
+msgid "Cannot create a folder here"
+msgstr "Impossible de créer un dossier ici"
+
+msgid "Cannot decrypt this item"
+msgstr "Impossible de déchiffrer cet élément"
+
+msgid "Cannot leave this item"
+msgstr "Impossible de quitter cet élément"
+
+msgid "Cannot open this folder"
+msgstr "Impossible d’ouvrir ce dossier"
+
+msgid "Cannot put items here"
+msgstr "Impossible de placer des éléments ici"
+
+msgid "Cannot reach Proton"
+msgstr "Impossible de joindre Proton"
+
+msgid "Cannot read “%s”"
+msgstr "Impossible de lire « %s »"
+
+msgid "Cannot use this file: %s"
+msgstr "Impossible d’utiliser ce fichier : %s"
+
+msgid "Check your internet connection and try again."
+msgstr "Vérifiez votre connexion Internet et réessayez."
+
+msgid "Choose Another File…"
+msgstr "Choisir un autre fichier…"
+
+msgid "Choose Folder"
+msgstr "Choisir un dossier"
+
+msgid "Choose a file on this computer"
+msgstr "Choisissez un fichier sur cet ordinateur"
+
+msgid "Choose the CLI…"
+msgstr "Choisir le CLI…"
+
+msgid "Choose the Proton Drive CLI"
+msgstr "Choisir le CLI Proton Drive"
+
+msgid "Choose…"
+msgstr "Choisir…"
+
+msgid "Clear Finished"
+msgstr "Effacer les terminés"
+
+msgid "Close"
+msgstr "Fermer"
+
+msgid "Computers"
+msgstr "Ordinateurs"
+
+msgid "Computers synced with the Proton Drive desktop app appear here."
+msgstr "Les ordinateurs synchronisés avec l’application de bureau Proton Drive apparaissent ici."
+
+msgid "Continue in Your Browser"
+msgstr "Continuez dans votre navigateur"
+
+msgid "Copied “%[2]s”"
+msgid_plural "Copied %[1]d items"
+msgstr[0] "« %[2]s » copié"
+msgstr[1] "%[1]d éléments copiés"
+
+msgid "Copy Link"
+msgstr "Copier le lien"
+
+msgid "Copy Name"
+msgstr "Copier le nom"
+
+msgid "Could not change the file: %s"
+msgstr "Impossible de modifier le fichier : %s"
+
+msgid "Could not change the login setting: %s"
+msgstr "Impossible de modifier le réglage de connexion : %s"
+
+msgid "Could not open the browser"
+msgstr "Impossible d’ouvrir le navigateur"
+
+msgid "Could not open the file: %s"
+msgstr "Impossible d’ouvrir le fichier : %s"
+
+msgid "Could not open the folder"
+msgstr "Impossible d’ouvrir le dossier"
+
+msgid "Could not prepare the file: %s"
+msgstr "Impossible de préparer le fichier : %s"
+
+msgid "Create"
+msgstr "Créer"
+
+msgid "Create previews for uploaded images"
+msgstr "Créer des aperçus pour les images envoyées"
+
+msgid "Debug (large logs)"
+msgstr "Débogage (journaux volumineux)"
+
+msgid "Dec"
+msgstr "déc."
+
+msgid "Decline"
+msgstr "Refuser"
+
+msgid "Declined “%s”"
+msgstr "« %s » refusé"
+
+msgid "Delete Forever"
+msgstr "Supprimer définitivement"
+
+msgid "Delete Forever…"
+msgstr "Supprimer définitivement…"
+
+msgid "Delete forever (in trash)"
+msgstr "Supprimer définitivement (corbeille)"
+
+msgid "Delete “%[2]s” Forever?"
+msgid_plural "Delete %[1]d Items Forever?"
+msgstr[0] "Supprimer « %[2]s » définitivement ?"
+msgstr[1] "Supprimer %[1]d éléments définitivement ?"
+
+msgid "Deleted “%[2]s” forever"
+msgid_plural "Deleted %[1]d items forever"
+msgstr[0] "« %[2]s » supprimé définitivement"
+msgstr[1] "%[1]d éléments supprimés définitivement"
+
+msgid "Demo mode — sample data"
+msgstr "Mode démo — données d’exemple"
+
+msgid "Descending"
+msgstr "Décroissant"
+
+msgid "Details"
+msgstr "Détails"
+
+msgid "Details: %s"
+msgstr "Détails : %s"
+
+msgid "Detect Automatically"
+msgstr "Détecter automatiquement"
+
+msgid "Detected automatically"
+msgstr "Détecté automatiquement"
+
+msgid "Download To"
+msgstr "Télécharger dans"
+
+msgid "Download failed"
+msgstr "Échec du téléchargement"
+
+msgid "Download finished"
+msgstr "Téléchargement terminé"
+
+msgid "Downloaded Files"
+msgstr "Fichiers téléchargés"
+
+msgid "Downloaded Folders"
+msgstr "Dossiers téléchargés"
+
+msgid "Downloading"
+msgstr "Téléchargement de"
+
+msgid "Downloading %d item"
+msgid_plural "Downloading %d items"
+msgstr[0] "Téléchargement de %d élément"
+msgstr[1] "Téléchargement de %d éléments"
+
+msgid "Downloading to %s"
+msgstr "Téléchargement vers %s"
+
+msgid "Downloading to %s — %s of %s (%.0f%%)"
+msgstr "Téléchargement vers %s — %s sur %s (%.0f %%)"
+
+msgid "Downloads"
+msgstr "Téléchargements"
+
+msgid "Download…"
+msgstr "Télécharger…"
+
+msgid "Drop files here or use the upload button."
+msgstr "Déposez des fichiers ici ou utilisez le bouton d’envoi."
+
+msgid "Each transfer uses about 125 MB of memory"
+msgstr "Chaque transfert utilise environ 125 Mo de mémoire"
+
+msgid "Empty Trash"
+msgstr "Vider la corbeille"
+
+msgid "Empty Trash?"
+msgstr "Vider la corbeille ?"
+
+msgid "Empty Trash…"
+msgstr "Vider la corbeille…"
+
+msgid "Emptying the trash; it may take a moment to finish"
+msgstr "Vidage de la corbeille ; cela peut prendre un moment"
+
+msgid "Enter at least one email address."
+msgstr "Saisissez au moins une adresse électronique."
+
+msgid "Errors only"
+msgstr "Erreurs uniquement"
+
+msgid "Expires"
+msgstr "Expiration"
+
+msgid "Failed"
+msgstr "Échec"
+
+msgid "Feb"
+msgstr "févr."
+
+msgid "Files"
+msgstr "Fichiers"
+
+msgid "Files and folders other people share with you appear here."
+msgstr "Les fichiers et dossiers que d’autres personnes partagent avec vous apparaissent ici."
+
+msgid "Files cannot be uploaded here"
+msgstr "Impossible d’envoyer des fichiers ici"
+
+msgid "Filter by name"
+msgstr "Filtrer par nom"
+
+msgid "Finish signing in on Proton's website. You can also open the link on another device."
+msgstr "Terminez la connexion sur le site de Proton. Vous pouvez aussi ouvrir le lien sur un autre appareil."
+
+msgid "Folder Is Empty"
+msgstr "Le dossier est vide"
+
+msgid "Folder too large"
+msgstr "Dossier trop volumineux"
+
+msgid "Folder “%s” created"
+msgstr "Dossier « %s » créé"
+
+msgid "Found a copy at %s. Choose it to use it; Quark will ask to make it executable."
+msgstr "Une copie a été trouvée dans %s. Choisissez-la pour l’utiliser ; Quark proposera de la rendre exécutable."
+
+msgid "Friday"
+msgstr "vendredi"
+
+msgid "From %s · %s"
+msgstr "De %s · %s"
+
+msgid "General"
+msgstr "Général"
+
+msgid "Generate Thumbnails"
+msgstr "Générer des miniatures"
+
+msgid "Get the CLI"
+msgstr "Obtenir le CLI"
+
+msgid "Get the Latest CLI"
+msgstr "Obtenir le dernier CLI"
+
+msgid "In 1 day"
+msgstr "Dans 1 jour"
+
+msgid "In 30 days"
+msgstr "Dans 30 jours"
+
+msgid "In 7 days"
+msgstr "Dans 7 jours"
+
+msgid "Information"
+msgstr "Informations"
+
+msgid "Invalid email address"
+msgstr "Adresse électronique non valide"
+
+msgid "Invalid name"
+msgstr "Nom non valide"
+
+msgid "Invitation sent"
+msgid_plural "%d invitations sent"
+msgstr[0] "Invitation envoyée"
+msgstr[1] "%d invitations envoyées"
+
+msgid "Invitations"
+msgstr "Invitations"
+
+msgid "Invited · %s"
+msgstr "Invité · %s"
+
+msgid "It may have been moved, renamed or deleted, possibly on another device."
+msgstr "Il a peut-être été déplacé, renommé ou supprimé, éventuellement depuis un autre appareil."
+
+msgid "Item not found"
+msgstr "Élément introuvable"
+
+msgid "Items in the trash cannot be renamed"
+msgstr "Les éléments de la corbeille ne peuvent pas être renommés"
+
+msgid "Its keys or signatures could not be verified."
+msgstr "Ses clés ou signatures n’ont pas pu être vérifiées."
+
+msgid "Jan"
+msgstr "janv."
+
+msgid "Jul"
+msgstr "juil."
+
+msgid "Jun"
+msgstr "juin"
+
+msgid "Keep both"
+msgstr "Conserver les deux"
+
+msgid "Keep transfers going and start at login"
+msgstr "Poursuivre les transferts et démarrer à la connexion"
+
+msgid "Keep transfers going when the window is closed"
+msgstr "Poursuivre les transferts quand la fenêtre est fermée"
+
+msgid "Keyboard Shortcuts"
+msgstr "Raccourcis clavier"
+
+msgid "Keyboard shortcuts"
+msgstr "Raccourcis clavier"
+
+msgid "Leave"
+msgstr "Quitter"
+
+msgid "Leave “%s”?"
+msgstr "Quitter « %s » ?"
+
+msgid "Leave…"
+msgstr "Quitter…"
+
+msgid "Link"
+msgstr "Lien"
+
+msgid "Link copied"
+msgstr "Lien copié"
+
+msgid "Link created"
+msgstr "Lien créé"
+
+msgid "Link removed"
+msgstr "Lien supprimé"
+
+msgid "Link updated"
+msgstr "Lien mis à jour"
+
+msgid "Main Menu"
+msgstr "Menu principal"
+
+msgid "Make the File Executable?"
+msgstr "Rendre le fichier exécutable ?"
+
+msgid "Mar"
+msgstr "mars"
+
+msgid "May"
+msgstr "mai"
+
+msgid "Merge"
+msgstr "Fusionner"
+
+msgid "Modified"
+msgstr "Modifié"
+
+msgid "Monday"
+msgstr "lundi"
+
+msgid "Move to Trash"
+msgstr "Mettre à la corbeille"
+
+msgid "Move to trash"
+msgstr "Mettre à la corbeille"
+
+msgid "Moved “%[2]s”"
+msgid_plural "Moved %[1]d items"
+msgstr[0] "« %[2]s » déplacé"
+msgstr[1] "%[1]d éléments déplacés"
+
+msgid "Moved “%[2]s” to the trash"
+msgid_plural "Moved %[1]d items to the trash"
+msgstr[0] "« %[2]s » mis à la corbeille"
+msgstr[1] "%[1]d éléments mis à la corbeille"
+
+msgid "My Files"
+msgstr "Mes fichiers"
+
+msgid "My files"
+msgstr "Mes fichiers"
+
+msgid "Name"
+msgstr "Nom"
+
+msgid "Name already in use"
+msgstr "Nom déjà utilisé"
+
+msgid "Names cannot contain control characters."
+msgstr "Les noms ne peuvent pas contenir de caractères de contrôle."
+
+msgid "Names cannot contain “/”."
+msgstr "Les noms ne peuvent pas contenir « / »."
+
+msgid "Needs a tray: enable the AppIndicator extension in Extensions"
+msgstr "Nécessite une zone de notification : activez l’extension AppIndicator dans Extensions"
+
+msgid "Never"
+msgstr "Jamais"
+
+msgid "New"
+msgstr "Nouveau"
+
+msgid "New Folder"
+msgstr "Nouveau dossier"
+
+msgid "New Folder…"
+msgstr "Nouveau dossier…"
+
+msgid "New folder"
+msgstr "Nouveau dossier"
+
+msgid "No Computers"
+msgstr "Aucun ordinateur"
+
+msgid "No Matches"
+msgstr "Aucun résultat"
+
+msgid "No Transfers"
+msgstr "Aucun transfert"
+
+msgid "No active transfers"
+msgstr "Aucun transfert en cours"
+
+msgid "No cache directory available"
+msgstr "Aucun dossier de cache disponible"
+
+msgid "No email address"
+msgstr "Aucune adresse électronique"
+
+msgid "No item in this folder matches your filter."
+msgstr "Aucun élément de ce dossier ne correspond à votre filtre."
+
+msgid "Not connected"
+msgstr "Non connecté"
+
+msgid "Not every item could be processed. You can try the failed ones again."
+msgstr "Tous les éléments n’ont pas pu être traités. Vous pouvez réessayer ceux qui ont échoué."
+
+msgid "Nothing Shared With You"
+msgstr "Rien n’est partagé avec vous"
+
+msgid "Nothing Shared Yet"
+msgstr "Rien n’est encore partagé"
+
+msgid "Nov"
+msgstr "nov."
+
+msgid "Oct"
+msgstr "oct."
+
+msgid "On %s"
+msgstr "Le %s"
+
+msgid "Only accept invitations from people you know: the sender's address is shown as verified by Proton when possible."
+msgstr "N’acceptez que les invitations de personnes que vous connaissez : l’adresse de l’expéditeur est indiquée comme vérifiée par Proton lorsque c’est possible."
+
+msgid "Open"
+msgstr "Ouvrir"
+
+msgid "Open Browser"
+msgstr "Ouvrir le navigateur"
+
+msgid "Open Quark"
+msgstr "Ouvrir Quark"
+
+msgid "Opening “%s”…"
+msgstr "Ouverture de « %s »…"
+
+msgid "Parent Folder"
+msgstr "Dossier parent"
+
+msgid "Parent folder"
+msgstr "Dossier parent"
+
+msgid "Password (optional)"
+msgstr "Mot de passe (facultatif)"
+
+msgid "Pause Transfers"
+msgstr "Suspendre les transferts"
+
+msgid "People"
+msgstr "Personnes"
+
+msgid "Permission"
+msgstr "Autorisation"
+
+msgid "Preferences"
+msgstr "Préférences"
+
+msgid "Program"
+msgstr "Programme"
+
+msgid "Proton Drive CLI"
+msgstr "CLI Proton Drive"
+
+msgid "Proton Drive CLI Needed"
+msgstr "CLI Proton Drive requis"
+
+msgid "Proton Drive CLI Update Needed"
+msgstr "Mise à jour du CLI Proton Drive requise"
+
+msgid "Proton Drive CLI is too old"
+msgstr "Le CLI Proton Drive est trop ancien"
+
+msgid "Proton Drive CLI not found"
+msgstr "CLI Proton Drive introuvable"
+
+msgid "Proton did not answer in time. Try again."
+msgstr "Proton n’a pas répondu à temps. Réessayez."
+
+msgid "Proton is busy"
+msgstr "Proton est occupé"
+
+msgid "Public Link"
+msgstr "Lien public"
+
+msgid "Quark contributors"
+msgstr "Contributeurs de Quark"
+
+msgid "Quark hit an internal error. Details were written to the log."
+msgstr "Quark a rencontré une erreur interne. Les détails ont été écrits dans le journal."
+
+msgid "Quark is still running"
+msgstr "Quark est toujours en cours d’exécution"
+
+msgid "Quark needs the official Proton Drive CLI to work."
+msgstr "Quark a besoin du CLI officiel de Proton Drive pour fonctionner."
+
+msgid "Quark sent an invalid request. Details were written to the log."
+msgstr "Quark a envoyé une requête non valide. Les détails ont été écrits dans le journal."
+
+msgid "Quark works through the official Proton Drive CLI. Official CLI builds send crash reports and usage metrics to Proton."
+msgstr "Quark fonctionne grâce au CLI officiel de Proton Drive. Les versions officielles du CLI envoient des rapports de plantage et des statistiques d’utilisation à Proton."
+
+msgid "Quark works through the official Proton Drive command-line tool. Download it from proton.me, then choose the file here."
+msgstr "Quark fonctionne grâce à l’outil en ligne de commande officiel de Proton Drive. Téléchargez-le sur proton.me, puis choisissez le fichier ici."
+
+msgid "Quit"
+msgstr "Quitter"
+
+msgid "Refresh"
+msgstr "Actualiser"
+
+msgid "Remove"
+msgstr "Retirer"
+
+msgid "Remove %s?"
+msgstr "Retirer %s ?"
+
+msgid "Remove Access"
+msgstr "Retirer l’accès"
+
+msgid "Remove From List"
+msgstr "Retirer de la liste"
+
+msgid "Remove Link"
+msgstr "Supprimer le lien"
+
+msgid "Remove the Link?"
+msgstr "Supprimer le lien ?"
+
+msgid "Removed %s"
+msgstr "%s retiré"
+
+msgid "Rename"
+msgstr "Renommer"
+
+msgid "Rename…"
+msgstr "Renommer…"
+
+msgid "Replace (deletes the local file)"
+msgstr "Remplacer (supprime le fichier local)"
+
+msgid "Replace (deletes the local folder)"
+msgstr "Remplacer (supprime le dossier local)"
+
+msgid "Replace (moves the old file to the trash)"
+msgstr "Remplacer (met l’ancien fichier à la corbeille)"
+
+msgid "Replace (moves the old folder to the trash)"
+msgstr "Remplacer (met l’ancien dossier à la corbeille)"
+
+msgid "Restore"
+msgstr "Restaurer"
+
+msgid "Restore items before moving them"
+msgstr "Restaurez les éléments avant de les déplacer"
+
+msgid "Restore the folder to browse its contents"
+msgstr "Restaurez le dossier pour parcourir son contenu"
+
+msgid "Restored"
+msgstr "Restauré"
+
+msgid "Restored “%[2]s”"
+msgid_plural "Restored %[1]d items"
+msgstr[0] "« %[2]s » restauré"
+msgstr[1] "%[1]d éléments restaurés"
+
+msgid "Resume Transfers"
+msgstr "Reprendre les transferts"
+
+msgid "Retry"
+msgstr "Réessayer"
+
+msgid "Retrying soon"
+msgstr "Nouvel essai bientôt"
+
+msgid "Review"
+msgstr "Examiner"
+
+msgid "Run in Background"
+msgstr "Fonctionner en arrière-plan"
+
+msgid "Saturday"
+msgstr "samedi"
+
+msgid "Saved in %s"
+msgstr "Enregistré dans %s"
+
+msgid "Search This Folder"
+msgstr "Rechercher dans ce dossier"
+
+msgid "Sep"
+msgstr "sept."
+
+msgid "Several items in the trash are named “%s”. The Proton Drive CLI cannot tell them apart; use the Proton Drive website for these."
+msgstr "Plusieurs éléments de la corbeille s’appellent « %s ». Le CLI Proton Drive ne peut pas les distinguer ; utilisez le site Proton Drive pour ceux-ci."
+
+msgid "Several items shared with you have this name, and the Proton Drive CLI cannot tell them apart."
+msgstr "Plusieurs éléments partagés avec vous portent ce nom, et le CLI Proton Drive ne peut pas les distinguer."
+
+msgid "Share With a Link"
+msgstr "Partager avec un lien"
+
+msgid "Share “%s”"
+msgstr "Partager « %s »"
+
+msgid "Shared"
+msgstr "Partagé"
+
+msgid "Shared by me"
+msgstr "Partagés par moi"
+
+msgid "Shared with me"
+msgstr "Partagés avec moi"
+
+msgid "Share…"
+msgstr "Partager…"
+
+msgid "Show"
+msgstr "Afficher"
+
+msgid "Show in Folder"
+msgstr "Afficher dans le dossier"
+
+msgid "Sign In…"
+msgstr "Se connecter…"
+
+msgid "Sign Out"
+msgstr "Se déconnecter"
+
+msgid "Sign Out?"
+msgstr "Se déconnecter ?"
+
+msgid "Sign Out…"
+msgstr "Se déconnecter…"
+
+msgid "Sign in to Proton to continue."
+msgstr "Connectez-vous à Proton pour continuer."
+
+msgid "Sign in with your Proton account to browse and transfer your files. Your password is entered on Proton's website, never in Quark."
+msgstr "Connectez-vous avec votre compte Proton pour parcourir et transférer vos fichiers. Votre mot de passe est saisi sur le site de Proton, jamais dans Quark."
+
+msgid "Sign-in link copied"
+msgstr "Lien de connexion copié"
+
+msgid "Simultaneous Transfers"
+msgstr "Transferts simultanés"
+
+msgid "Size"
+msgstr "Taille"
+
+msgid "Skip"
+msgstr "Ignorer"
+
+msgid "Some items cannot be handled by name"
+msgstr "Certains éléments ne peuvent pas être traités par leur nom"
+
+msgid "Some items failed"
+msgstr "Certains éléments ont échoué"
+
+msgid "Something went wrong"
+msgstr "Un problème est survenu"
+
+msgid "Sort By"
+msgstr "Trier par"
+
+msgid "Start at Login"
+msgstr "Démarrer à la connexion"
+
+msgid "Start hidden in the top bar when you log in"
+msgstr "Démarrer masqué dans la barre supérieure à la connexion"
+
+msgid "Suggested Folder"
+msgstr "Dossier suggéré"
+
+msgid "Sunday"
+msgstr "dimanche"
+
+msgid "That file does not exist"
+msgstr "Ce fichier n’existe pas"
+
+msgid "The Proton Drive CLI is not available."
+msgstr "Le CLI Proton Drive n’est pas disponible."
+
+msgid "The Proton Drive CLI reported an error."
+msgstr "Le CLI Proton Drive a signalé une erreur."
+
+msgid "The Proton Drive CLI stopped unexpectedly"
+msgstr "Le CLI Proton Drive s’est arrêté de manière inattendue"
+
+msgid "The data could not be verified. Try again."
+msgstr "Les données n’ont pas pu être vérifiées. Réessayez."
+
+msgid "The name cannot be empty."
+msgstr "Le nom ne peut pas être vide."
+
+msgid "The name is not valid text."
+msgstr "Le nom n’est pas un texte valide."
+
+msgid "The name is too long."
+msgstr "Le nom est trop long."
+
+msgid "They will no longer have access to this item."
+msgstr "Cette personne n’aura plus accès à cet élément."
+
+msgid "This cannot be undone."
+msgstr "Cette action est irréversible."
+
+msgid "This folder has too many items for Quark to show."
+msgstr "Ce dossier contient trop d’éléments pour que Quark les affiche."
+
+msgid "This is taking too long"
+msgstr "Cela prend trop de temps"
+
+msgid "This name is reserved."
+msgstr "Ce nom est réservé."
+
+msgid "Thursday"
+msgstr "jeudi"
+
+msgid "Today %s"
+msgstr "Aujourd’hui %s"
+
+msgid "Too many requests right now. Try again in a moment."
+msgstr "Trop de requêtes en ce moment. Réessayez dans un instant."
+
+msgid "Transfers"
+msgstr "Transferts"
+
+msgid "Transfers continue in the background. Open Quark or quit it from its icon in the top bar."
+msgstr "Les transferts se poursuivent en arrière-plan. Ouvrez ou quittez Quark depuis son icône dans la barre supérieure."
+
+msgid "Trash"
+msgstr "Corbeille"
+
+msgid "Trash Is Empty"
+msgstr "La corbeille est vide"
+
+msgid "Trashed"
+msgstr "Mis à la corbeille"
+
+msgid "Troubleshooting"
+msgstr "Dépannage"
+
+msgid "Try Again"
+msgstr "Réessayer"
+
+msgid "Try again. If it keeps happening, check the log."
+msgstr "Réessayez. Si le problème persiste, consultez le journal."
+
+msgid "Tuesday"
+msgstr "mardi"
+
+msgid "Undo"
+msgstr "Annuler"
+
+msgid "Unexpected answer from the Proton Drive CLI"
+msgstr "Réponse inattendue du CLI Proton Drive"
+
+msgid "Untitled Folder"
+msgstr "Dossier sans titre"
+
+msgid "Upload Files"
+msgstr "Envoyer des fichiers"
+
+msgid "Upload Files…"
+msgstr "Envoyer des fichiers…"
+
+msgid "Upload Folder"
+msgstr "Envoyer un dossier"
+
+msgid "Upload Folder…"
+msgstr "Envoyer un dossier…"
+
+msgid "Upload failed"
+msgstr "Échec de l’envoi"
+
+msgid "Upload files"
+msgstr "Envoyer des fichiers"
+
+msgid "Upload finished"
+msgstr "Envoi terminé"
+
+msgid "Uploaded Files"
+msgstr "Fichiers envoyés"
+
+msgid "Uploaded Folders"
+msgstr "Dossiers envoyés"
+
+msgid "Uploaded to %s"
+msgstr "Envoyé dans %s"
+
+msgid "Uploading"
+msgstr "Envoi de"
+
+msgid "Uploading %d item"
+msgid_plural "Uploading %d items"
+msgstr[0] "Envoi de %d élément"
+msgstr[1] "Envoi de %d éléments"
+
+msgid "Uploading to %s"
+msgstr "Envoi vers %s"
+
+msgid "Uploads and downloads appear here."
+msgstr "Les envois et téléchargements apparaissent ici."
+
+msgid "Verification failed"
+msgstr "Échec de la vérification"
+
+msgid "View Options"
+msgstr "Options d’affichage"
+
+msgid "Waiting"
+msgstr "En attente"
+
+msgid "Warnings"
+msgstr "Avertissements"
+
+msgid "Wednesday"
+msgstr "mercredi"
+
+msgid "Welcome to Quark"
+msgstr "Bienvenue dans Quark"
+
+msgid "What to do when an item with the same name already exists."
+msgstr "Que faire lorsqu’un élément du même nom existe déjà."
+
+msgid "Written to ~/.local/state/proton-drive-cli"
+msgstr "Écrit dans ~/.local/state/proton-drive-cli"
+
+msgid "Yesterday %s"
+msgstr "Hier %s"
+
+msgid "You are signed out"
+msgstr "Vous êtes déconnecté"
+
+msgid "You left “%s”"
+msgstr "Vous avez quitté « %s »"
+
+msgid "You will lose access until someone shares it with you again."
+msgstr "Vous perdrez l’accès jusqu’à ce que quelqu’un le partage de nouveau avec vous."
+
+msgid "You will need to sign in again to use Quark. Files on your computer are not affected."
+msgstr "Vous devrez vous reconnecter pour utiliser Quark. Les fichiers de votre ordinateur ne sont pas affectés."
+
+msgid "Your CLI version may not be supported yet."
+msgstr "Votre version du CLI n’est peut-être pas encore prise en charge."
+
+msgid "newer than tested"
+msgstr "plus récente que la version testée"
+
+msgid "version %s"
+msgstr "version %s"
+
+msgid "waiting"
+msgstr "en attente"
+
+msgid "“%s” added to Shared with me"
+msgstr "« %s » ajouté à Partagés avec moi"
+
+msgid "“%s” is not a valid email address."
+msgstr "« %s » n’est pas une adresse électronique valide."
+
+msgid "“%s” is not marked as a program yet. Quark can allow it to run. Only do this for the official Proton Drive CLI downloaded from proton.me."
+msgstr "« %s » n’est pas encore marqué comme programme. Quark peut l’autoriser à s’exécuter. Ne le faites que pour le CLI officiel de Proton Drive téléchargé depuis proton.me."

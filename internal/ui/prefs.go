@@ -162,7 +162,11 @@ func (w *window) showPreferences() {
 	login := adw.NewSwitchRow()
 	login.SetTitle(T("Start at Login"))
 	login.SetSubtitle(T("Start hidden in the top bar when you log in"))
-	login.SetActive(autostart.Enabled(AppID))
+	if autostart.InFlatpak() {
+		login.SetActive(st.StartAtLogin) // the portal owns the entry; remember the choice
+	} else {
+		login.SetActive(autostart.Enabled(AppID))
+	}
 	login.SetSensitive(!w.opts.Demo)
 	login.NotifyProperty("active", func() {
 		if err := w.setStartAtLogin(login.Active()); err != nil {

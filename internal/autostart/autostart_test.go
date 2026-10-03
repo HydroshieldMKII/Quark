@@ -65,3 +65,12 @@ func TestQuote(t *testing.T) {
 		}
 	}
 }
+
+func TestInFlatpakOnHost(t *testing.T) {
+	if _, err := os.Stat("/.flatpak-info"); err == nil {
+		t.Skip("running inside Flatpak")
+	}
+	if InFlatpak() {
+		t.Fatal("InFlatpak true on the host")
+	}
+}

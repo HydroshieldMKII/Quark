@@ -8,6 +8,7 @@ import (
 
 	"example.org/quark/internal/app"
 	"example.org/quark/internal/drive"
+	"example.org/quark/internal/i18n"
 )
 
 func roleLabel(r drive.Role) string {
@@ -27,10 +28,10 @@ type expiryChoice struct {
 }
 
 var expiryChoices = []expiryChoice{
-	{"Never", 0},
-	{"In 1 day", 24 * time.Hour},
-	{"In 7 days", 7 * 24 * time.Hour},
-	{"In 30 days", 30 * 24 * time.Hour},
+	{i18n.M("Never"), 0},
+	{i18n.M("In 1 day"), 24 * time.Hour},
+	{i18n.M("In 7 days"), 7 * 24 * time.Hour},
+	{i18n.M("In 30 days"), 30 * 24 * time.Hour},
 }
 
 // shareDialog lets the user manage the public link and the people who have
@@ -309,7 +310,7 @@ func (s *shareDialog) setExpiryChoices(link *drive.PublicLink) {
 	labels := []string{}
 	sel := 0
 	if !link.Expires.IsZero() {
-		s.expiry = append(s.expiry, expiryChoice{Tf("On %s", link.Expires.Local().Format("2 Jan 2006")), -1})
+		s.expiry = append(s.expiry, expiryChoice{Tf("On %s", app.FormatTime(link.Expires, time.Now().AddDate(1, 0, 0))), -1})
 		labels = append(labels, s.expiry[0].label)
 	}
 	for _, c := range expiryChoices {

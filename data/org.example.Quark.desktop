@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Quark
+GenericName=Cloud Storage
+Comment=Browse and transfer your Proton Drive files (unofficial client)
+Exec=quark
+Icon=org.example.Quark
+Terminal=false
+StartupNotify=true
+Categories=GTK;GNOME;Network;FileTransfer;
+Keywords=proton;drive;cloud;storage;files;upload;download;share;
