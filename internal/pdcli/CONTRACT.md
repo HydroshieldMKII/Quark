@@ -10,6 +10,7 @@ When the CLI version changes, re-read the source diff and re-capture fixtures.
 | Aspect | Behaviour |
 |---|---|
 | Invocation | `proton-drive <group> <command> [options] args...`. Group `fs` = `filesystem`; prefixes are matched. **Quark always uses full names.** |
+| Positionals | Quark always puts `--` before positionals so names starting with `-` are safe (verified). `--long=value` works. |
 | Options | Must come **after** `<group> <command>` (argv[2] and argv[3] are the group and command; `proton-drive --json fs list /` fails as "command not found"). Node `util.parseArgs`, strict. Global per command: `-h/--help`, `-j/--json`, `-v/--verbose`. Options may appear anywhere. Use `--` before positionals that may start with `-`. |
 | No args | Starts a REPL. Quark never does this. |
 | `--version` | Prints two lines, then fetches `https://proton.me/download/drive/cli/version.json` (5 s timeout) and prints an "latest"/"newer version" line. Exit 0. |
@@ -19,7 +20,7 @@ When the CLI version changes, re-read the source diff and re-capture fixtures.
 | Fatal error | `=====...` line, stack trace and `Error details:` dump on stderr, exit 1. |
 | `ExitError` | Exit 2. |
 | Not logged in | stderr `You need to login first`, exit 1. |
-| Logs | `-v` adds coloured log lines on stderr. File log in `$XDG_STATE_HOME/proton-drive-cli/` at `PROTON_DRIVE_LOG_LEVEL` (default DEBUG). |
+| Logs | `-v` adds coloured log lines on **stdout** (verified 2026-10-03), which corrupts JSON: **never pass `-v`**. File log in `$XDG_STATE_HOME/proton-drive-cli/` at `PROTON_DRIVE_LOG_LEVEL` (default DEBUG). |
 | Telemetry | Official builds send crash reports to Proton's Sentry and metrics (`Telemetry enabled: build=true, user=false`). |
 
 ## JSON output shapes

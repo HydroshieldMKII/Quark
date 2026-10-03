@@ -239,7 +239,12 @@ func Setup(t testing.TB, sc Scenario) (binary string, env map[string]string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return exe, map[string]string{EnvActive: "1", EnvScenario: path, "QUARK_FAKE_RECORDS": sc.RecordDir}
+	// A coverage-instrumented test binary warns on stderr at exit unless GOCOVERDIR is set.
+	cover := filepath.Join(dir, "cover")
+	if err := os.MkdirAll(cover, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	return exe, map[string]string{EnvActive: "1", EnvScenario: path, "QUARK_FAKE_RECORDS": sc.RecordDir, "GOCOVERDIR": cover}
 }
 
 // Records returns every run recorded in dir, oldest first.

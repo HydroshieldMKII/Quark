@@ -1,0 +1,1 @@
+{"transferredItems":2,"transferredBytes":12345,"skippedItems":1,"failedItems":1,"failures":[{"name":"big.iso","error":"ValidationError: Name conflict on \"big.iso\" (file) already exists"}]}
