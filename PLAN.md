@@ -127,12 +127,29 @@ cache `~/.cache/proton-drive-cli/` (`cache-crypto.sqlite`, `cache-entities.sqlit
 process that finds a live pid simply does not listen for events (`canListenForEvents() == false`).
 It is not a hard mutual exclusion, but concurrent processes share the two SQLite caches.
 
-### 1.7 Unknowns that require a logged-in session (first task in M0)
+### 1.7 CLI contract from source (resolved 2026-10-03)
 
-The exact `--json` payloads of every command, whether upload/download emit machine-readable progress
-in JSON mode (the binary has a `progressLine`/`print` pair, which suggests a TTY-only progress line),
-the final stdout of a successful `auth login`, and the stderr wording of network/permission/
-conflict errors. These are captured as fixtures, not guessed (see §6.3).
+The CLI is open source (MIT, Proton AG) at github.com/ProtonDriveApps/sdk; CLI 0.8.0 is in tag
+`js/v0.21.1`. Its source was read and summarised in `internal/pdcli/CONTRACT.md`, which is now the
+reference for parsers. Findings that change the design:
+
+* JSON objects are one line; lists are a streamed array that is truncated if the command fails
+  midway. Errors are always plain text on stderr.
+* **No progress in JSON mode.** Progress is drawn only on a TTY. Transfers report a final summary
+  object only. See §4.5 for the progress strategy.
+* JSON mode never prompts: an unresolved conflict becomes a recorded failure.
+* Batch results (trash/move/copy/restore/delete) lose the per-item error reason (`"error":{}`).
+  Quark shows "failed" per item and offers a retry, which surfaces the reason on stderr if it fails.
+* Path segments resolve to the first matching name, and a UID-shaped segment resolves to that node
+  anywhere. Quark therefore addresses existing nodes as `/my-files/<uid>`. Trash items can only be
+  addressed by name, so restore/delete is refused when a trashed name is not unique.
+* `sharing status` on an unshared node prints the literal `undefined`.
+* `auth login --json` prints `{"signInUrl": ...}` and opens the browser itself via `xdg-open`.
+* Options must follow `<group> <command>`.
+* Official builds send crash reports and metrics to Proton. Mention it in the About dialog.
+
+Still to confirm with recorded fixtures after login: real payloads for every shape and the exact
+stderr wording of network and permission errors.
 
 ### 1.8 Library versions chosen
 
@@ -184,12 +201,29 @@ conflict errors. These are captured as fixtures, not guessed (see §6.3).
 | CLI integration | One short-lived `proton-drive` process per operation, always `--json`, always explicit conflict strategies, no TTY | Simple, crash-isolated, matches the CLI's design. REPL mode deferred. |
 | Settings | JSON file in `$XDG_CONFIG_HOME/quark/settings.json`, written atomically (temp + rename) | No GSettings schema compilation step; trivially testable; Flatpak-friendly. |
 | Secrets | None stored by Quark. The CLI owns the session in libsecret. | Keeps Quark out of the credential business. |
-| Logging | `log/slog`, JSON handler to `$XDG_STATE_HOME/quark/quark.log` (rotated, 5×2 MB) + text to stderr when `-v` | Standard library only. Redact URLs with tokens and emails at the handler. |
+| Logging | `log/slog`, JSON handler to `$XDG_STATE_HOME/quark/quark.log` (rotated, 5×2 MB, own small rotator in `internal/xlog`) + text to stderr when `-v` | Standard library only. Redact URLs with tokens and emails at the handler. lumberjack rejected (inactive since 2024). |
 | Concurrency model | GTK main loop is the single owner of UI state; workers never touch widgets; results marshalled with `glib.IdleAdd` | The one rule that prevents 90% of GTK crashes. Enforced by lint (depguard) and review. |
 | Build | `Makefile` (or `just`) wrapping `go build`, lint, tests, flatpak-builder | Standard for GNOME projects; CI calls the same targets. |
 | Lint | golangci-lint with the config in §6.6, `go vet`, `staticcheck`, `govulncheck`, `gofumpt` | Catches unchecked errors, context misuse, forbidden imports. |
 | License | GPL-3.0-or-later | Required by gotk4-adwaita's AGPL. |
 | App ID | `org.example.Quark` (**decision D1 for the owner**) | Flathub needs a verifiable domain or GitHub namespace. |
+
+### 3.1 Dependency policy and vetted list (checked 2026-10-03)
+
+A dependency is allowed only if it is actively maintained (commits within ~6 months, not archived),
+widely used or the only credible option, and GPL-3.0-compatible. Prefer the standard library.
+Re-check this table at every milestone; `govulncheck` runs in CI.
+
+| Module | Use | Status on 2026-10-03 | Verdict |
+|---|---|---|---|
+| `github.com/diamondburned/gotk4/pkg` | GTK 4 bindings | v0.4.1 (2026-08-09), 705★, active, AGPL-3.0 | Use (branch `4.22`) |
+| `github.com/diamondburned/gotk4-adwaita/pkg` | libadwaita bindings | pseudo-version 2026-08-08, active, AGPL-3.0 | Use (branch `adw-1.9`) |
+| `go.uber.org/goleak` | goroutine leak checks in tests | v1.3.0, repo active 2026-09, 5.3k★, MIT | Use (test only) |
+| `pgregory.net/rapid` | property-based tests | v1.3.0 (2026-04-30), active, MPL-2.0 | Use (test only) |
+| `github.com/benbjohnson/clock` | fake clock | **archived 2023** | Rejected → `testing/synctest` |
+| `gopkg.in/natefinch/lumberjack.v2` | log rotation | last activity 2024-08 | Rejected → own rotator |
+| `github.com/leonelquinteros/gotext` | gettext catalogues | v1.7.2, active 2026-09 | Decide in M5 (vs. GLib gettext) |
+| Tools: golangci-lint v2.14.0, gofumpt, staticcheck, govulncheck | lint/security | all active 2026-08..10 | Use |
 
 ---
 
@@ -297,9 +331,9 @@ Rules for the real runner:
 
 * One CLI process per transfer item (file or folder) so state is per item even if the CLI gives no
   progress; `-f`/`-d` always set from user choice or preferences.
-* Progress: if fixtures show progress on stdout in JSON mode, parse it; otherwise show
-  determinate progress for downloads by polling local file size (every 500 ms) and indeterminate
-  activity for uploads, plus "n of m items".
+* Progress: the CLI prints none in JSON mode (§1.7). Downloads get determinate progress by polling
+  the local file size every 500 ms against the node's `claimedSize`; uploads show indeterminate
+  activity per file plus "n of m items"; both finish with the summary object.
 * Retry with exponential backoff (1 s, 4 s, 16 s, max 3) only for `Network`/`RateLimited`.
 * Cancel = SIGTERM group → wait 5 s → SIGKILL; partially downloaded files are removed only if Quark
   created them in this session.
@@ -335,8 +369,8 @@ Rules for the real runner:
   all actions reachable by keyboard; shortcuts listed in the shortcuts dialog.
 * Wayland rules: no `gtk.Window.Move/Position`, no X11 APIs, no global hotkeys, no tray icon; app
   icon via the `.desktop` file and `gtk.Window.SetIconName`.
-* i18n: wrap user strings in a `i18n.T()` helper from day one (gettext via `gotk4`'s glib bindings
-  or `leonelquinteros/gotext`); French and English catalogues (decision D4).
+* i18n: wrap user strings in a `i18n.T()` helper from day one; the backend (GLib gettext or
+  `leonelquinteros/gotext`) is chosen in M5 per §3.1; French and English catalogues (decision D4).
 
 ### 5.2 Login experience
 
@@ -392,7 +426,7 @@ supported set, so bumping the CLI forces a re-capture and a review of diffs.
 | Unit: `pdcli` parsers, error table, runner | `go test -race`, fixtures, `FuzzParseList/Info/Status/ProgressLine` (30 s each in CI) | ≥ 90 % |
 | Unit: `drive` path escaping, use cases | table tests + property tests (`pgregory.net/rapid`) for escape/unescape round-trip | ≥ 90 % |
 | Unit: `app` store, state machine, view-models | table tests, `goleak` in `TestMain` | ≥ 85 % |
-| Unit: `jobs` scheduler, retries, cancellation, persistence | fake clock (`benbjohnson/clock` or injected `func() time.Time`), `goleak` | ≥ 85 % |
+| Unit: `jobs` scheduler, retries, cancellation, persistence | `testing/synctest` (standard library; `benbjohnson/clock` rejected, archived), `goleak` | ≥ 85 % |
 | Process hygiene | test spawns fake hanging CLIs, cancels, asserts no child processes remain (`/proc` scan) and no goroutine leaks | required |
 | UI smoke (`//go:build uitest`) | runs under headless mutter: `dbus-run-session -- mutter --headless --wayland --no-x11 --sm-disable -- go test -tags uitest ./internal/ui/...`; asserts window maps, navigation renders fake data, dialogs open/close, no GLib criticals (`G_DEBUG=fatal-criticals`) | required in CI |
 | Soak / chaos (`make soak`, nightly) | 30 min against fake CLI with random latency and 10 % failures; watchdog fails if the main loop stalls > 2 s; RSS and goroutine count must plateau | required nightly |
@@ -560,7 +594,8 @@ pinning; sync folder (watch + upload) if the owner wants it.
 ## 10. Decisions needed from the owner (defaults apply if unanswered)
 
 * **D1** App ID: `org.example.Quark` (the owner's GitHub user), unless the owner prefers another namespace.
-* **D2** Bundle the CLI in the Flatpak? Default: no (user supplies the binary) until licence is confirmed.
+* **D2** Bundle the CLI in the Flatpak? The CLI source is MIT (Proton AG), so building or redistributing it is
+  permitted with the notice. Default stays "no" for v1 (user supplies the official binary); revisit in M6.
 * **D3** Photos/albums in v1? Default: no (v1.1).
 * **D4** Languages: default English + French.
 * **D5** Repository hosting for CI: default GitHub Actions.

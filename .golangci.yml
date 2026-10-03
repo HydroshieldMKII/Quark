@@ -1,0 +1,64 @@
+version: "2"
+
+run:
+  timeout: 10m
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - contextcheck
+    - depguard
+    - errorlint
+    - exhaustive
+    - forbidigo
+    - gocritic
+    - gosec
+    - misspell
+    - nilerr
+    - noctx
+    - revive
+    - unparam
+  settings:
+    depguard:
+      rules:
+        gtk-only-in-ui:
+          files: ["$all", "!**/internal/ui/**", "!**/cmd/quark/**"]
+          deny:
+            - pkg: github.com/diamondburned
+              desc: GTK bindings are only allowed in internal/ui and cmd/quark (PLAN.md §4.1)
+        exec-only-in-pdcli:
+          files: ["$all", "!**/internal/pdcli/**", "!**/internal/testutil/**"]
+          deny:
+            - pkg: os/exec
+              desc: only internal/pdcli may spawn processes (constitution, Principle III)
+        ui-not-pdcli:
+          files: ["**/internal/ui/**"]
+          deny:
+            - pkg: example.org/quark/internal/pdcli
+              desc: the UI talks to internal/app, never to the CLI adapter directly
+    forbidigo:
+      forbid:
+        - pattern: ^fmt\.Print(f|ln)?$
+          msg: use log/slog or return the value
+        - pattern: ^os\.Exit$
+          msg: only main may exit
+        - pattern: ^time\.Sleep$
+          msg: use timers with context or testing/synctest
+    gosec:
+      excludes:
+        - G204 # subprocess launched with variable: pdcli builds argv deliberately, never via a shell
+    exhaustive:
+      default-signifies-exhaustive: true
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters: [forbidigo, gosec, unparam, errcheck]
+      - path: (cmd|tools)/
+        linters: [forbidigo]
+      - path: internal/testutil/
+        linters: [forbidigo, gosec, errcheck, noctx]
+
+formatters:
+  enable:
+    - gofumpt
