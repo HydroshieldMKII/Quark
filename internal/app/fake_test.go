@@ -33,6 +33,8 @@ type fakeBackend struct {
 	empty   func() error
 	login   func(ctx context.Context, onURL func(string)) error
 	logout  func() error
+	share   func(op, path string, arg any) (*drive.Sharing, error)
+	invites func() ([]drive.Invitation, error)
 }
 
 func newFakeBackend() *fakeBackend {
@@ -189,6 +191,67 @@ func (f *fakeBackend) Logout(context.Context) error {
 	if fn, _ := f.script(func() any { return f.logout }).(func() error); fn != nil {
 		return fn()
 	}
+	return nil
+}
+
+func (f *fakeBackend) shareFn() func(string, string, any) (*drive.Sharing, error) {
+	fn, _ := f.script(func() any { return f.share }).(func(string, string, any) (*drive.Sharing, error))
+	if fn == nil {
+		return func(string, string, any) (*drive.Sharing, error) { return nil, nil }
+	}
+	return fn
+}
+
+func (f *fakeBackend) Sharing(_ context.Context, path string) (*drive.Sharing, error) {
+	defer f.enter("read", "sharing "+path)()
+	return f.shareFn()("status", path, nil)
+}
+
+func (f *fakeBackend) Invite(_ context.Context, path string, s pdcli.InviteSpec) (*drive.Sharing, error) {
+	defer f.enter("write", "invite "+path+" "+strings.Join(s.Emails, ",")+" "+string(s.Role))()
+	return f.shareFn()("invite", path, s)
+}
+
+func (f *fakeBackend) RemoveMembers(_ context.Context, path string, emails []string) (*drive.Sharing, error) {
+	defer f.enter("write", "unshare "+path+" "+strings.Join(emails, ","))()
+	return f.shareFn()("remove", path, emails)
+}
+
+func (f *fakeBackend) SetLink(_ context.Context, path string, s pdcli.LinkSpec) (*drive.Sharing, error) {
+	exp := ""
+	if !s.Expires.IsZero() {
+		exp = s.Expires.UTC().Format("2006-01-02")
+	}
+	defer f.enter("write", "set-url "+path+" "+string(s.Role)+" pw="+s.Password+" exp="+exp)()
+	return f.shareFn()("set-url", path, s)
+}
+
+func (f *fakeBackend) RemoveLink(_ context.Context, path string) (*drive.Sharing, error) {
+	defer f.enter("write", "remove-url "+path)()
+	return f.shareFn()("remove-url", path, nil)
+}
+
+func (f *fakeBackend) Leave(_ context.Context, path string) error {
+	defer f.enter("write", "leave "+path)()
+	_, err := f.shareFn()("leave", path, nil)
+	return err
+}
+
+func (f *fakeBackend) Invitations(context.Context) ([]drive.Invitation, error) {
+	defer f.enter("read", "invitations")()
+	if fn, _ := f.script(func() any { return f.invites }).(func() ([]drive.Invitation, error)); fn != nil {
+		return fn()
+	}
+	return nil, nil
+}
+
+func (f *fakeBackend) AcceptInvitation(_ context.Context, uid string) error {
+	defer f.enter("write", "accept "+uid)()
+	return nil
+}
+
+func (f *fakeBackend) RejectInvitation(_ context.Context, uid string) error {
+	defer f.enter("write", "reject "+uid)()
 	return nil
 }
 

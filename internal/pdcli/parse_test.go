@@ -179,7 +179,7 @@ func TestParseSharing(t *testing.T) {
 		t.Errorf("invitations = %+v / %+v", s.ProtonInvitations, s.NonProtonInvitations)
 	}
 	l := s.Link
-	if l == nil || l.URL != "https://drive.proton.me/urls/ABCDEF#secret" || !l.HasCustomPassword || l.Downloads != 3 ||
+	if l == nil || l.URL != "https://drive.proton.me/urls/ABCDEF#secret" || !l.HasCustomPassword || l.Password != "hunter2" || l.Downloads != 3 ||
 		!l.Expires.Equal(time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)) {
 		t.Errorf("link = %+v", l)
 	}

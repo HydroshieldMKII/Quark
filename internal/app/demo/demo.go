@@ -27,6 +27,8 @@ type Backend struct {
 	Latency  time.Duration
 	LoggedIn bool
 	now      time.Time
+	shares   map[string]*drive.Sharing // by node UID
+	invites  []drive.Invitation
 }
 
 const rootUID = "demo~root"
@@ -36,6 +38,7 @@ func New(now time.Time) *Backend {
 	b := &Backend{
 		nodes: map[string]*drive.Node{}, children: map[string][]string{},
 		Latency: 150 * time.Millisecond, LoggedIn: true, now: now,
+		shares: map[string]*drive.Sharing{},
 	}
 	b.nodes[rootUID] = &drive.Node{UID: rootUID, Name: "My files", NameOK: true, Type: drive.TypeFolder}
 	docs := b.add(rootUID, "Documents", drive.TypeFolder, "", 0, 26*time.Hour)
@@ -43,6 +46,11 @@ func New(now time.Time) *Backend {
 	b.add(rootUID, "Projects", drive.TypeFolder, "", 0, 400*time.Hour)
 	shared := b.add(rootUID, "Shared plans", drive.TypeFolder, "", 0, 5*time.Hour)
 	b.nodes[shared].IsShared, b.nodes[shared].IsSharedByURL = true, true
+	b.shares[shared] = &drive.Sharing{
+		Members: []drive.Member{{Email: "sam@example.com", Role: drive.RoleEditor, Invited: now.Add(-48 * time.Hour), AddedBy: "you@proton.me", AddedByVerified: true}},
+		Link:    &drive.PublicLink{URL: "https://drive.proton.me/urls/DEMO#demo", Role: drive.RoleViewer, Created: now.Add(-24 * time.Hour)},
+	}
+	b.invites = []drive.Invitation{{UID: "drive~demo1", Role: drive.RoleViewer, Invited: now.Add(-time.Hour), From: "alex@example.com", FromVerified: true, NodeName: "Holiday photos", NodeType: drive.TypeFolder}}
 	b.add(rootUID, "Budget 2026.ods", drive.TypeFile, "application/vnd.oasis.opendocument.spreadsheet", 48_211, 3*time.Hour)
 	b.add(rootUID, "Notes.md", drive.TypeFile, "text/markdown", 2_048, 20*time.Minute)
 	b.add(rootUID, "Vacation.mp4", drive.TypeFile, "video/mp4", 734_003_200, 900*time.Hour)
@@ -437,3 +445,144 @@ func sleep(ctx context.Context, d time.Duration) error {
 		return &pdcli.Error{Kind: pdcli.KindCancelled, Err: errors.Join(ctx.Err())}
 	}
 }
+
+func (b *Backend) shareOf(path string) (string, *drive.Sharing, error) {
+	uid, err := b.resolve(path)
+	if err != nil {
+		return "", nil, err
+	}
+	return uid, b.shares[uid], nil
+}
+
+func (b *Backend) setShare(uid string, s *drive.Sharing) *drive.Sharing {
+	n := b.nodes[uid]
+	if s == nil || (len(s.Members) == 0 && len(s.ProtonInvitations) == 0 && s.Link == nil) {
+		delete(b.shares, uid)
+		n.IsShared, n.IsSharedByURL = false, false
+		return nil
+	}
+	b.shares[uid] = s
+	n.IsShared, n.IsSharedByURL = true, s.Link != nil
+	cp := *s
+	return &cp
+}
+
+// Sharing implements app.Backend.
+func (b *Backend) Sharing(ctx context.Context, path string) (*drive.Sharing, error) {
+	if err := b.wait(ctx); err != nil {
+		return nil, err
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	_, s, err := b.shareOf(path)
+	if s == nil || err != nil {
+		return nil, err
+	}
+	cp := *s
+	return &cp, nil
+}
+
+// Invite implements app.Backend.
+func (b *Backend) Invite(ctx context.Context, path string, spec pdcli.InviteSpec) (*drive.Sharing, error) {
+	if err := b.wait(ctx); err != nil {
+		return nil, err
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	uid, s, err := b.shareOf(path)
+	if err != nil {
+		return nil, err
+	}
+	if s == nil {
+		s = &drive.Sharing{}
+	}
+	for _, e := range spec.Emails {
+		s.ProtonInvitations = append(s.ProtonInvitations, drive.Member{Email: e, Role: spec.Role, Invited: b.now, AddedBy: "you@proton.me", AddedByVerified: true})
+	}
+	return b.setShare(uid, s), nil
+}
+
+// RemoveMembers implements app.Backend.
+func (b *Backend) RemoveMembers(ctx context.Context, path string, emails []string) (*drive.Sharing, error) {
+	if err := b.wait(ctx); err != nil {
+		return nil, err
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	uid, s, err := b.shareOf(path)
+	if err != nil || s == nil {
+		return nil, err
+	}
+	drop := func(list []drive.Member) []drive.Member {
+		return slices.DeleteFunc(list, func(m drive.Member) bool { return slices.Contains(emails, m.Email) })
+	}
+	s.Members, s.ProtonInvitations = drop(s.Members), drop(s.ProtonInvitations)
+	return b.setShare(uid, s), nil
+}
+
+// SetLink implements app.Backend.
+func (b *Backend) SetLink(ctx context.Context, path string, spec pdcli.LinkSpec) (*drive.Sharing, error) {
+	if err := b.wait(ctx); err != nil {
+		return nil, err
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	uid, s, err := b.shareOf(path)
+	if err != nil {
+		return nil, err
+	}
+	if s == nil {
+		s = &drive.Sharing{}
+	}
+	s.Link = &drive.PublicLink{URL: "https://drive.proton.me/urls/DEMO-" + uid + "#demo", Role: spec.Role, Created: b.now, Expires: spec.Expires, HasCustomPassword: spec.Password != "", Password: spec.Password}
+	return b.setShare(uid, s), nil
+}
+
+// RemoveLink implements app.Backend.
+func (b *Backend) RemoveLink(ctx context.Context, path string) (*drive.Sharing, error) {
+	if err := b.wait(ctx); err != nil {
+		return nil, err
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	uid, s, err := b.shareOf(path)
+	if err != nil || s == nil {
+		return nil, err
+	}
+	s.Link = nil
+	return b.setShare(uid, s), nil
+}
+
+// Leave implements app.Backend (nothing is shared with the demo user).
+func (b *Backend) Leave(ctx context.Context, path string) error {
+	if err := b.wait(ctx); err != nil {
+		return err
+	}
+	return notFound(path)
+}
+
+// Invitations implements app.Backend.
+func (b *Backend) Invitations(ctx context.Context) ([]drive.Invitation, error) {
+	if err := b.wait(ctx); err != nil {
+		return nil, err
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return slices.Clone(b.invites), nil
+}
+
+func (b *Backend) answer(ctx context.Context, uid string) error {
+	if err := b.wait(ctx); err != nil {
+		return err
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.invites = slices.DeleteFunc(b.invites, func(i drive.Invitation) bool { return i.UID == uid })
+	return nil
+}
+
+// AcceptInvitation implements app.Backend.
+func (b *Backend) AcceptInvitation(ctx context.Context, uid string) error { return b.answer(ctx, uid) }
+
+// RejectInvitation implements app.Backend.
+func (b *Backend) RejectInvitation(ctx context.Context, uid string) error { return b.answer(ctx, uid) }

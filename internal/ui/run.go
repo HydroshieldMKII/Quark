@@ -174,6 +174,21 @@ func (w *window) screenshotScenario(spec string) {
 		w.showSection("transfers")
 	case action == "prefs":
 		w.showPreferences()
+	case strings.HasPrefix(action, "share="):
+		name := strings.TrimPrefix(action, "share=")
+		if v := w.visibleFiles(); v != nil {
+			glib.TimeoutAdd(400, func() {
+				for _, n := range v.b.State().Visible {
+					if n.Name == name {
+						w.showShare(v.b.State().Location, n)
+					}
+				}
+			})
+		}
+	case action == "invitations":
+		if v := w.visibleFiles(); v != nil && v.inv != nil {
+			glib.TimeoutAdd(400, v.showInvitations)
+		}
 	case action == "signin":
 		w.a.Login()
 	}

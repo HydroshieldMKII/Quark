@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"path/filepath"
+	"strings"
 
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
@@ -16,13 +17,14 @@ import (
 
 // transfersView lists uploads and downloads, newest first.
 type transfersView struct {
-	w     *window
-	page  *adw.NavigationPage
-	list  *gtk.ListBox
-	stack *gtk.Stack
-	clear *gtk.Button
-	pause *gtk.Button
-	rows  map[string]*transferRow
+	w       *window
+	page    *adw.NavigationPage
+	list    *gtk.ListBox
+	stack   *gtk.Stack
+	clear   *gtk.Button
+	pause   *gtk.Button
+	summary *gtk.Label
+	rows    map[string]*transferRow
 }
 
 type transferRow struct {
@@ -52,9 +54,16 @@ func newTransfersView(w *window) *transfersView {
 	v.list.AddCSSClass("boxed-list")
 	v.list.SetSelectionMode(gtk.SelectionNone)
 	v.list.SetVAlign(gtk.AlignStart)
+	v.summary = gtk.NewLabel("")
+	v.summary.SetXAlign(0)
+	v.summary.AddCSSClass("dim-label")
+	v.summary.SetMarginBottom(12)
+	box := gtk.NewBox(gtk.OrientationVertical, 0)
+	box.Append(v.summary)
+	box.Append(v.list)
 	clamp := adw.NewClamp()
 	clamp.SetMaximumSize(860)
-	clamp.SetChild(v.list)
+	clamp.SetChild(box)
 	clamp.SetMarginTop(18)
 	clamp.SetMarginBottom(18)
 	clamp.SetMarginStart(12)
@@ -114,6 +123,7 @@ func (v *transfersView) refresh() {
 		}
 	}
 	v.clear.SetVisible(finished > 0)
+	v.summary.SetText(transfersSummary(items, v.w.q.Paused()))
 	active, _ := v.w.q.Counts()
 	v.pause.SetVisible(active > 0 || v.w.q.Paused())
 	if v.w.q.Paused() {
@@ -257,4 +267,40 @@ func formatSize(n int64) string {
 		n = 0
 	}
 	return glibv2.FormatSize(uint64(n)) //nolint:gosec // n is non-negative
+}
+
+// transfersSummary is the line above the list ("2 in progress · 1 failed").
+func transfersSummary(items []jobs.Transfer, paused bool) string {
+	var running, waiting, done, failed int
+	for _, t := range items {
+		switch t.Status {
+		case jobs.Running:
+			running++
+		case jobs.Queued:
+			waiting++
+		case jobs.Done:
+			done++
+		case jobs.Failed, jobs.Partial:
+			failed++
+		case jobs.Cancelled:
+		}
+	}
+	var parts []string
+	if paused && running+waiting > 0 {
+		parts = append(parts, Tf(N("%d paused", "%d paused", running+waiting), running+waiting))
+	} else {
+		if running > 0 {
+			parts = append(parts, Tf(N("%d in progress", "%d in progress", running), running))
+		}
+		if waiting > 0 {
+			parts = append(parts, Tf(N("%d waiting", "%d waiting", waiting), waiting))
+		}
+	}
+	if failed > 0 {
+		parts = append(parts, Tf(N("%d failed", "%d failed", failed), failed))
+	}
+	if done > 0 {
+		parts = append(parts, Tf(N("%d done", "%d done", done), done))
+	}
+	return strings.Join(parts, " · ")
 }

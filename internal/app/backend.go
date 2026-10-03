@@ -24,6 +24,16 @@ type Backend interface {
 	EmptyTrash(ctx context.Context) error
 	Login(ctx context.Context, onURL func(string)) error
 	Logout(ctx context.Context) error
+
+	Sharing(ctx context.Context, path string) (*drive.Sharing, error)
+	Invite(ctx context.Context, path string, s pdcli.InviteSpec) (*drive.Sharing, error)
+	RemoveMembers(ctx context.Context, path string, emails []string) (*drive.Sharing, error)
+	SetLink(ctx context.Context, path string, s pdcli.LinkSpec) (*drive.Sharing, error)
+	RemoveLink(ctx context.Context, path string) (*drive.Sharing, error)
+	Leave(ctx context.Context, path string) error
+	Invitations(ctx context.Context) ([]drive.Invitation, error)
+	AcceptInvitation(ctx context.Context, uid string) error
+	RejectInvitation(ctx context.Context, uid string) error
 }
 
 var _ Backend = (*pdcli.Client)(nil)

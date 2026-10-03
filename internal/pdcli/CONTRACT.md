@@ -97,6 +97,13 @@ Name error forms: `{}` (Error) or `{name: placeholder, error: string}` (InvalidN
   `.` and `..` become `_` and `__` (`sanitizePathSegmentForLocalFilesystem`). `drive.LocalName`
   mirrors it.
 
+## Public link updates
+
+`sharing set-url` **replaces all link settings**: omitting `--password` removes the custom
+password and omitting `--expiration` removes the expiry (`updateSharedLink` in the SDK). `sharing
+status` returns the current custom password in clear, so Quark re-sends password and expiry
+whenever it changes one setting.
+
 ## Commands Quark uses
 
 | Command | Args | Notes |

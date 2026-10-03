@@ -104,7 +104,10 @@ type PublicLink struct {
 	Created           time.Time
 	Expires           time.Time // zero when no expiry
 	HasCustomPassword bool
-	Downloads         int
+	// Password is the custom password, kept so that updates can re-send it:
+	// the CLI replaces all link settings on every update. Never log it.
+	Password  string
+	Downloads int
 }
 
 // Sharing is the sharing state of a node. A nil *Sharing means not shared.

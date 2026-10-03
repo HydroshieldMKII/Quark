@@ -77,6 +77,9 @@ func (w *window) setCompact(on bool) {
 }
 
 func newWindow(gapp *adw.Application, o Options) *window {
+	if o.Logger == nil {
+		o.Logger = slog.Default()
+	}
 	w := &window{
 		gapp: gapp, a: o.App, q: o.Queue, log: o.Logger, opts: o,
 		files: map[string]*filesView{}, sidebarRows: map[string]*gtk.ListBoxRow{},

@@ -52,6 +52,10 @@ type filesView struct {
 	modCol  *gtk.ColumnViewColumn
 	compact bool
 
+	inv       *app.Invitations
+	invBanner *adw.Banner
+	invFill   func(app.InvitationsState) // the open invitations dialog, if any
+
 	actions map[string]*gio.SimpleAction
 	sortAct *gio.SimpleAction
 	descAct *gio.SimpleAction
@@ -160,6 +164,9 @@ func newFilesView(w *window, section drive.Section, label string) *filesView {
 	v.stack.AddNamed(scroll, "list")
 
 	content := gtk.NewBox(gtk.OrientationVertical, 0)
+	if section == drive.SectionSharedWithMe {
+		content.Append(v.buildInvitations())
+	}
 	content.Append(v.search)
 	content.Append(v.stack)
 
@@ -543,7 +550,12 @@ func (v *filesView) installActions() {
 		v.actions[name] = a
 	}
 	add("up", v.b.Up)
-	add("refresh", v.b.Refresh)
+	add("refresh", func() {
+		v.b.Refresh()
+		if v.inv != nil {
+			v.inv.Refresh()
+		}
+	})
 	add("new-folder", v.promptNewFolder)
 	add("upload-files", func() { v.chooseUpload(false) })
 	add("upload-folder", func() { v.chooseUpload(true) })
@@ -566,6 +578,20 @@ func (v *filesView) installActions() {
 		v.w.win.Clipboard().SetText(strings.Join(names, "\n"))
 	})
 	add("search", func() { v.search.SetSearchMode(true) })
+	add("share", func() {
+		if sel := v.selected(); len(sel) == 1 {
+			v.w.showShare(v.b.State().Location, sel[0])
+		}
+	})
+	add("leave", func() {
+		sel := v.selected()
+		if len(sel) != 1 {
+			return
+		}
+		n, listing := sel[0], v.allNodes()
+		confirm(v.w, Tf("Leave “%s”?", n.Name), T("You will lose access until someone shares it with you again."),
+			T("Leave"), func() { v.w.a.Leave(listing, n) })
+	})
 
 	st := v.w.a.Settings()
 	v.sortAct = gio.NewSimpleActionStateful("sort", glibv2.NewVariantType("s"), glibv2.NewVariantString(st.SortColumn))
@@ -639,6 +665,8 @@ func (v *filesView) updateActions() {
 	enable("delete-forever", len(sel) > 0 && inTrash)
 	enable("empty-trash", inTrash && st.Total > 0)
 	enable("copy-name", len(sel) > 0)
+	enable("share", len(sel) == 1 && !inTrash && !(v.section == drive.SectionDevices && st.Location.IsRoot()))
+	enable("leave", len(sel) == 1 && sharedRoot)
 	if v.emptyBtn != nil {
 		v.emptyBtn.SetSensitive(st.Total > 0)
 	}
@@ -657,6 +685,12 @@ func (v *filesView) contextMenu() *gio.Menu {
 	open.Append(T("Open"), "files.open")
 	open.Append(T("Download…"), "files.download")
 	m.AppendSection("", open)
+	share := gio.NewMenu()
+	share.Append(T("Share…"), "files.share")
+	if v.section == drive.SectionSharedWithMe {
+		share.Append(T("Leave…"), "files.leave")
+	}
+	m.AppendSection("", share)
 	edit := gio.NewMenu()
 	edit.Append(T("Rename…"), "files.rename")
 	edit.Append(T("Copy Name"), "files.copy-name")
@@ -869,4 +903,74 @@ func (v *filesView) chooseDownload() {
 			ActionLabel: T("Show"), Action: func() { v.w.showSection("transfers") },
 		})
 	})
+}
+
+// buildInvitations shows a banner in Shared with me while invitations are pending.
+func (v *filesView) buildInvitations() gtk.Widgetter {
+	v.inv = v.w.a.NewInvitations()
+	v.invBanner = adw.NewBanner("")
+	v.invBanner.SetButtonLabel(T("Review"))
+	v.invBanner.ConnectButtonClicked(v.showInvitations)
+	v.inv.OnChange(func(st app.InvitationsState) {
+		n := len(st.Items)
+		v.invBanner.SetTitle(Tf(N("%d pending invitation", "%d pending invitations", n), n))
+		v.invBanner.SetRevealed(n > 0)
+		if v.invFill != nil {
+			v.invFill(st)
+		}
+	})
+	v.inv.Refresh()
+	return v.invBanner
+}
+
+// showInvitations lists pending invitations with Accept and Decline.
+func (v *filesView) showInvitations() {
+	d := adw.NewDialog()
+	d.SetTitle(T("Invitations"))
+	d.SetContentWidth(460)
+	d.SetContentHeight(420)
+	group := adw.NewPreferencesGroup()
+	group.SetDescription(T("Only accept invitations from people you know: the sender's address is shown as verified by Proton when possible."))
+	var rows []gtk.Widgetter
+	fill := func(st app.InvitationsState) {
+		for _, r := range rows {
+			group.Remove(r)
+		}
+		rows = nil
+		if len(st.Items) == 0 {
+			d.Close()
+			return
+		}
+		for _, inv := range st.Items {
+			row := adw.NewActionRow()
+			row.SetTitle(inv.NodeName)
+			from := inv.From
+			if !inv.FromVerified {
+				from = Tf("%s (unverified)", inv.From)
+			}
+			row.SetSubtitle(Tf("From %s · %s", from, roleLabel(inv.Role)))
+			decline := gtk.NewButtonWithLabel(T("Decline"))
+			decline.SetVAlign(gtk.AlignCenter)
+			accept := gtk.NewButtonWithLabel(T("Accept"))
+			accept.AddCSSClass("suggested-action")
+			accept.SetVAlign(gtk.AlignCenter)
+			it := inv
+			decline.ConnectClicked(func() { v.inv.Reject(it) })
+			accept.ConnectClicked(func() { v.inv.Accept(it) })
+			row.AddSuffix(decline)
+			row.AddSuffix(accept)
+			group.Add(row)
+			rows = append(rows, row)
+		}
+	}
+	fill(v.inv.State())
+	v.invFill = fill
+	d.ConnectClosed(func() { v.invFill = nil })
+	page := adw.NewPreferencesPage()
+	page.Add(group)
+	view := adw.NewToolbarView()
+	view.AddTopBar(adw.NewHeaderBar())
+	view.SetContent(page)
+	d.SetChild(view)
+	d.Present(v.w.win)
 }

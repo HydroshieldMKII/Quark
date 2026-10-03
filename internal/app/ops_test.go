@@ -40,7 +40,7 @@ func listed(t *testing.T, h *harness, loc Location, nodes ...drive.Node) *Browse
 func writes(h *harness) []string {
 	var out []string
 	for _, c := range h.be.Calls() {
-		if !strings.HasPrefix(c, "list") && c != "version" && c != "roots" && c != "devices" {
+		if !strings.HasPrefix(c, "list") && !strings.HasPrefix(c, "sharing ") && c != "version" && c != "roots" && c != "devices" && c != "invitations" {
 			out = append(out, c)
 		}
 	}

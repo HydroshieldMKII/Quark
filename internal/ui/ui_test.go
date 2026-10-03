@@ -435,3 +435,74 @@ func TestBreadcrumbNavigation(t *testing.T) {
 		}
 	})
 }
+
+func TestShareDialog(t *testing.T) {
+	v := files(t, "my-files")
+	var sd *shareDialog
+	onMain(func() {
+		n, _ := find(v, "Shared plans")
+		sd = &shareDialog{w: testWin, v: testWin.a.NewShare(v.b.State().Location, n)}
+		sd.d = adw.NewDialog()
+		sd.stack = gtk.NewStack()
+		sd.errPage = adw.NewStatusPage()
+		sd.banner = adw.NewBanner("")
+		sd.spinner = adw.NewSpinner()
+		sd.stack.AddNamed(sd.errPage, "error")
+		sd.stack.AddNamed(sd.buildPage(), "page")
+		sd.d.SetChild(sd.stack)
+		sd.v.OnChange(sd.update)
+		sd.d.Present(testWin.win)
+	})
+	eventually(t, "share loaded", func() bool { return !sd.v.State().Loading && sd.v.State().Sharing != nil })
+	onMain(func() {
+		if !sd.linkSwitch.Active() || sd.url == "" || len(sd.members) != 1 {
+			t.Errorf("switch=%v url=%q members=%d", sd.linkSwitch.Active(), sd.url, len(sd.members))
+		}
+		sd.inviteRow.SetText("new@example.com")
+		sd.invite()
+	})
+	eventually(t, "invited", func() bool { return !sd.v.State().Busy && len(sd.members) == 2 })
+	onMain(func() {
+		sd.accessRow.SetSelected(1) // can edit
+	})
+	eventually(t, "role changed", func() bool {
+		st := sd.v.State()
+		return !st.Busy && st.Sharing != nil && st.Sharing.Link != nil && st.Sharing.Link.Role == drive.RoleEditor
+	})
+	// Late notifications must not undo the change.
+	time.Sleep(300 * time.Millisecond)
+	onMain(func() {
+		if st := sd.v.State(); st.Sharing.Link.Role != drive.RoleEditor || sd.accessRow.Selected() != 1 {
+			t.Errorf("role reverted: %v, selected %d", st.Sharing.Link.Role, sd.accessRow.Selected())
+		}
+	})
+	onMain(func() {
+		sd.v.RemoveLink()
+	})
+	eventually(t, "link removed", func() bool { return !sd.v.State().Busy && !sd.linkSwitch.Active() && !sd.urlRow.Visible() })
+	onMain(func() { sd.d.ForceClose() })
+}
+
+func TestInvitationsBannerAndDialog(t *testing.T) {
+	v := files(t, "shared-with-me")
+	eventually(t, "banner", func() bool { return v.invBanner.Revealed() })
+	onMain(v.showInvitations)
+	eventually(t, "dialog", func() bool { return testWin.win.VisibleDialog() != nil })
+	onMain(func() { v.inv.Accept(v.inv.State().Items[0]) })
+	eventually(t, "accepted", func() bool {
+		return !v.invBanner.Revealed() && testWin.win.VisibleDialog() == nil
+	})
+}
+
+func TestTransfersSummary(t *testing.T) {
+	items := []jobs.Transfer{{Status: jobs.Running}, {Status: jobs.Queued}, {Status: jobs.Queued}, {Status: jobs.Failed}, {Status: jobs.Done}}
+	if got := transfersSummary(items, false); got != "1 in progress · 2 waiting · 1 failed · 1 done" {
+		t.Errorf("summary = %q", got)
+	}
+	if got := transfersSummary(items, true); got != "3 paused · 1 failed · 1 done" {
+		t.Errorf("paused summary = %q", got)
+	}
+	if transfersSummary(nil, false) != "" {
+		t.Error("empty summary")
+	}
+}

@@ -351,6 +351,9 @@ func ParseSharing(command string, out []byte) (*drive.Sharing, error) {
 			HasCustomPassword: u.CustomPassword != nil && *u.CustomPassword != "",
 			Downloads:         u.NumberOfInitializedDownloads,
 		}
+		if u.CustomPassword != nil {
+			l.Password = *u.CustomPassword
+		}
 		if u.ExpirationTime != nil {
 			l.Expires = *u.ExpirationTime
 		}
