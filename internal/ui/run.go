@@ -26,6 +26,9 @@ type Options struct {
 	Version string
 	// Demo marks the window as showing sample data.
 	Demo bool
+	// Background starts hidden in the tray (used by the autostart entry);
+	// ignored when no tray host is available.
+	Background bool
 	// Screenshot renders the window to this PNG after startup and quits (debug).
 	Screenshot string
 	// ScreenshotSection selects the sidebar entry to show before the screenshot.
@@ -47,11 +50,14 @@ func Run(o Options, args []string) int {
 	})
 	gapp.ConnectActivate(func() {
 		if w != nil {
-			w.win.Present()
+			w.present()
 			return
 		}
 		w = newWindow(gapp, o)
-		w.win.Present()
+		w.startTray()
+		if !o.Background || w.tray == nil {
+			w.win.Present()
+		}
 		o.App.Start()
 		if err := o.Queue.Load(); err != nil {
 			w.toastText(err.Error())
@@ -63,6 +69,9 @@ func Run(o Options, args []string) int {
 	gapp.ConnectShutdown(func() {
 		if w != nil {
 			w.saveGeometry()
+			if w.tray != nil {
+				w.tray.Stop()
+			}
 		}
 		if o.OnShutdown != nil {
 			o.OnShutdown()
@@ -82,7 +91,8 @@ func installAppActions(gapp *adw.Application, cur func() *window) {
 	}
 	add("quit", []string{"<Control>q"}, func() {
 		if w := cur(); w != nil {
-			w.win.Close()
+			w.quit()
+			return
 		}
 		gapp.Quit()
 	})

@@ -571,3 +571,51 @@ func TestProgressUsesTheCLILocalName(t *testing.T) {
 	c.resp <- result{}
 	f.settle(id, Done)
 }
+
+func TestPauseRequeuesAndResumeRestarts(t *testing.T) {
+	f := newFixture(t)
+	dir := t.TempDir()
+	target := filepath.Join(dir, "big.iso")
+	id := f.q.Add(Transfer{Kind: Download, Name: "big.iso", Size: 100, Local: dir, Remote: "/my-files/b", FileStrategy: "rename", FolderStrategy: "merge"})
+	other := f.q.Add(upload("x"))
+	c := f.next()
+	f.next() // both running
+	if err := os.WriteFile(target, make([]byte, 10), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for f.q.Items()[0].PartialFile == "" {
+		f.l.drain()
+		if time.Now().After(deadline) {
+			t.Fatal("partial file not seen")
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+	f.q.Pause()
+	if !f.q.Paused() {
+		t.Fatal("not paused")
+	}
+	<-c.ctx.Done()
+	tr := f.settle(id, Queued)
+	f.settle(other, Queued)
+	if tr.Attempts != 0 {
+		t.Errorf("paused attempt counted: %d", tr.Attempts)
+	}
+	if _, err := os.Stat(target); !errors.Is(err, os.ErrNotExist) {
+		t.Error("partial file kept after pause")
+	}
+	if active, _ := f.q.Counts(); active != 2 {
+		t.Errorf("active = %d", active)
+	}
+	select {
+	case <-f.r.calls:
+		t.Fatal("started while paused")
+	case <-time.After(30 * time.Millisecond):
+	}
+	f.q.Resume()
+	f.next().resp <- result{}
+	f.next().resp <- result{}
+	f.settle(id, Done)
+	f.settle(other, Done)
+	f.q.Resume() // no-op
+}

@@ -13,6 +13,7 @@ import (
 	"example.org/quark/internal/drive"
 	"example.org/quark/internal/i18n"
 	"example.org/quark/internal/jobs"
+	"example.org/quark/internal/tray"
 )
 
 // Translation helpers (see internal/i18n).
@@ -62,6 +63,8 @@ type window struct {
 	current      string
 	selectedOnce bool
 	openOnFinish map[string]string // transfer id -> local file to open
+	tray         *tray.Tray
+	quitting     bool
 }
 
 func newWindow(gapp *adw.Application, o Options) *window {
@@ -95,6 +98,7 @@ func newWindow(gapp *adw.Application, o Options) *window {
 	bp.AddSetter(w.split, "collapsed", true)
 	w.win.AddBreakpoint(bp)
 
+	w.win.ConnectCloseRequest(w.onCloseRequest)
 	w.a.OnSession(w.onSession)
 	w.a.OnToast(w.onToast)
 	w.q.OnChange(w.onQueueChange)
@@ -254,6 +258,7 @@ func (w *window) showError(ue *app.UserError) {
 }
 
 func (w *window) onQueueChange() {
+	w.updateTray()
 	active, failed := w.q.Counts()
 	switch {
 	case active > 0:

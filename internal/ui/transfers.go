@@ -21,6 +21,7 @@ type transfersView struct {
 	list  *gtk.ListBox
 	stack *gtk.Stack
 	clear *gtk.Button
+	pause *gtk.Button
 	rows  map[string]*transferRow
 }
 
@@ -43,6 +44,9 @@ func newTransfersView(w *window) *transfersView {
 	v.clear = gtk.NewButtonWithLabel(T("Clear Finished"))
 	v.clear.ConnectClicked(func() { w.q.ClearFinished() })
 	header.PackEnd(v.clear)
+	v.pause = gtk.NewButtonFromIconName("media-playback-pause-symbolic")
+	v.pause.ConnectClicked(w.togglePause)
+	header.PackStart(v.pause)
 
 	v.list = gtk.NewListBox()
 	v.list.AddCSSClass("boxed-list")
@@ -110,6 +114,15 @@ func (v *transfersView) refresh() {
 		}
 	}
 	v.clear.SetVisible(finished > 0)
+	active, _ := v.w.q.Counts()
+	v.pause.SetVisible(active > 0 || v.w.q.Paused())
+	if v.w.q.Paused() {
+		v.pause.SetIconName("media-playback-start-symbolic")
+		v.pause.SetTooltipText(T("Resume Transfers"))
+	} else {
+		v.pause.SetIconName("media-playback-pause-symbolic")
+		v.pause.SetTooltipText(T("Pause Transfers"))
+	}
 	if len(items) == 0 {
 		v.stack.SetVisibleChildName("empty")
 	} else {

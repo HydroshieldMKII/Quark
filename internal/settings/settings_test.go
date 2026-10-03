@@ -18,6 +18,9 @@ func TestLoadMissingGivesDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !s.RunInBackground || s.StartAtLogin {
+		t.Fatalf("background defaults = %+v", s)
+	}
 	if s.UploadFileStrategy != "rename" || s.UploadFolderStrategy != "merge" ||
 		s.DownloadFileStrategy != "rename" || s.DownloadFolderStrategy != "merge" || s.MaxTransfers != 2 {
 		t.Fatalf("defaults = %+v", s)

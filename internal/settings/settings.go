@@ -55,6 +55,13 @@ type Settings struct {
 	DownloadFolderStrategy string `json:"downloadFolderStrategy"`
 	SkipThumbnails         bool   `json:"skipThumbnails"`
 	MaxTransfers           int    `json:"maxTransfers"`
+	// RunInBackground keeps Quark running in the tray when the window is
+	// closed (only when a tray host is available).
+	RunInBackground bool `json:"runInBackground"`
+	// StartAtLogin mirrors the autostart entry (the entry is the source of truth).
+	StartAtLogin bool `json:"startAtLogin"`
+	// BackgroundHintShown records that the "still running" notice was shown.
+	BackgroundHintShown bool `json:"backgroundHintShown"`
 	// CLILogLevel is passed to the CLI as PROTON_DRIVE_LOG_LEVEL.
 	CLILogLevel    string         `json:"cliLogLevel"`
 	Window         Window         `json:"window"`
@@ -76,6 +83,7 @@ func Defaults() Settings {
 		DownloadFileStrategy:   "rename",
 		DownloadFolderStrategy: "merge",
 		MaxTransfers:           2,
+		RunInBackground:        true,
 		CLILogLevel:            "WARNING",
 		Window:                 Window{Width: 1100, Height: 720},
 		SortColumn:             "name",

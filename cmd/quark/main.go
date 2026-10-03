@@ -31,6 +31,7 @@ func run() int {
 	demoMode := flag.Bool("demo", false, "show sample data; never runs the Proton Drive CLI")
 	demoSignedOut := flag.Bool("demo-signed-out", false, "with --demo: start signed out")
 	showVersion := flag.Bool("version", false, "print the version and exit")
+	background := flag.Bool("background", false, "start hidden in the tray (used at login)")
 	shot := flag.String("screenshot", "", "debug: render the window to this PNG file and quit")
 	shotSection := flag.String("screenshot-section", "", "debug: sidebar entry to show before the screenshot")
 	shotSize := flag.String("screenshot-size", "", "debug: window size for the screenshot, e.g. 1100x720")
@@ -123,7 +124,7 @@ func run() int {
 
 	w, h := parseSize(*shotSize)
 	code := ui.Run(ui.Options{
-		App: a, Queue: q, Logger: logger, Version: version, Demo: *demoMode,
+		App: a, Queue: q, Logger: logger, Version: version, Demo: *demoMode, Background: *background,
 		Screenshot: *shot, ScreenshotSection: *shotSection, ScreenshotWidth: w, ScreenshotHeight: h,
 		OnShutdown: func() {
 			okQ := q.Shutdown(10 * time.Second)

@@ -16,25 +16,31 @@ const module = "example.org/quark/"
 
 // gates maps package paths (relative to the module) to minimum coverage in percent.
 var gates = map[string]float64{
-	"internal/pdcli":    90,
-	"internal/drive":    90,
-	"internal/app":      85,
-	"internal/jobs":     85,
-	"internal/settings": 85,
-	"internal/xlog":     80,
+	"internal/pdcli":     90,
+	"internal/drive":     90,
+	"internal/app":       85,
+	"internal/jobs":      85,
+	"internal/settings":  85,
+	"internal/xlog":      80,
+	"internal/tray":      75,
+	"internal/autostart": 80,
 }
 
 type counts struct{ total, covered int }
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "usage: covercheck coverage.out")
+	if len(os.Args) < 2 {
+		fmt.Fprintln(os.Stderr, "usage: covercheck coverage.out [more.out...]")
 		os.Exit(2)
 	}
-	data, err := os.ReadFile(os.Args[1]) //nolint:gosec // a developer-supplied profile path
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(2)
+	var data []byte
+	for _, f := range os.Args[1:] {
+		b, err := os.ReadFile(f) //nolint:gosec // developer-supplied profile paths
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(2)
+		}
+		data = append(append(data, b...), '\n')
 	}
 
 	// Blocks can appear several times (one per test binary); keep the max count.

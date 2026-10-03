@@ -16,6 +16,7 @@ import (
 	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
+	"github.com/godbus/dbus/v5"
 
 	"example.org/quark/internal/app"
 	"example.org/quark/internal/app/demo"
@@ -31,7 +32,26 @@ var (
 
 func init() { runtime.LockOSThread() } // GTK must run on the main thread
 
+// fakeWatcher plays the GNOME AppIndicator extension on the test's private bus.
+type fakeWatcher struct{}
+
+func (fakeWatcher) RegisterStatusNotifierItem(dbus.Sender, string) *dbus.Error { return nil }
+
+func startFakeTrayHost() {
+	conn, err := dbus.ConnectSessionBus()
+	if err != nil {
+		panic(err)
+	}
+	if err := conn.Export(fakeWatcher{}, "/StatusNotifierWatcher", "org.kde.StatusNotifierWatcher"); err != nil {
+		panic(err)
+	}
+	if _, err := conn.RequestName("org.kde.StatusNotifierWatcher", dbus.NameFlagDoNotQueue); err != nil {
+		panic(err)
+	}
+}
+
 func TestMain(m *testing.M) {
+	startFakeTrayHost()
 	backend = demo.New(time.Now())
 	backend.Latency = 20 * time.Millisecond
 	loop := MainLoop{}
@@ -49,6 +69,7 @@ func TestMain(m *testing.M) {
 	})
 	gapp.ConnectActivate(func() {
 		testWin = newWindow(gapp, Options{App: a, Queue: q, Demo: true, Version: "test"})
+		testWin.startTray()
 		testWin.win.Present()
 		a.Start()
 		go func() {
@@ -331,4 +352,34 @@ func TestAdaptiveLayout(t *testing.T) {
 	eventually(t, "collapsed", func() bool { return testWin.split.Collapsed() })
 	onMain(func() { testWin.win.SetDefaultSize(1100, 720) })
 	eventually(t, "expanded", func() bool { return !testWin.split.Collapsed() })
+}
+
+func TestCloseHidesToTrayAndReopens(t *testing.T) {
+	onMain(func() {
+		if testWin.tray == nil {
+			t.Fatal("tray not started although a tray host is present")
+		}
+		testWin.win.Close()
+	})
+	eventually(t, "hidden", func() bool { return !testWin.win.Visible() })
+	onMain(func() {
+		if !testWin.a.Settings().BackgroundHintShown {
+			t.Error("background notice not recorded")
+		}
+		testWin.present()
+	})
+	eventually(t, "shown again", func() bool { return testWin.win.Visible() })
+}
+
+func TestPauseFromWindow(t *testing.T) {
+	onMain(func() {
+		testWin.togglePause()
+		if !testWin.q.Paused() {
+			t.Error("not paused")
+		}
+		testWin.togglePause()
+		if testWin.q.Paused() {
+			t.Error("not resumed")
+		}
+	})
 }

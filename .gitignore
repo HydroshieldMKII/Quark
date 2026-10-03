@@ -4,6 +4,7 @@
 *.test
 *.out
 coverage*.html
+coverage*.out
 /vendor/
 # Flatpak
 /.flatpak-builder/

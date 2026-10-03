@@ -131,6 +131,7 @@ type entry struct {
 	t          Transfer
 	cancel     context.CancelFunc
 	userCancel bool
+	requeue    bool // cancelled by Pause: goes back to the queue
 	stopRetry  func()
 }
 
@@ -142,6 +143,7 @@ type Queue struct {
 	running    int
 	limit      int
 	enabled    bool
+	paused     bool
 	closed     bool
 	seq        int
 	onChange   []func()
@@ -313,8 +315,37 @@ func (q *Queue) SetEnabled(on bool) {
 	q.pump()
 }
 
+// Pause stops every transfer: running ones are cancelled and queued again
+// (their partial downloads removed), and nothing starts until Resume.
+func (q *Queue) Pause() {
+	if q.paused || q.closed {
+		return
+	}
+	q.paused = true
+	for _, e := range q.items {
+		if e.t.Status == Running {
+			e.requeue = true
+			e.cancel()
+		}
+	}
+	q.changed()
+}
+
+// Resume restarts the queue after Pause.
+func (q *Queue) Resume() {
+	if !q.paused {
+		return
+	}
+	q.paused = false
+	q.changed()
+	q.pump()
+}
+
+// Paused reports whether the queue is paused.
+func (q *Queue) Paused() bool { return q.paused }
+
 func (q *Queue) pump() {
-	if q.closed || !q.enabled || q.cfg.Runner == nil {
+	if q.closed || !q.enabled || q.paused || q.cfg.Runner == nil {
 		return
 	}
 	now := q.cfg.Now()
@@ -341,7 +372,7 @@ func (q *Queue) start(e *entry, r Runner) {
 	q.running++
 	e.t.Status, e.t.Started, e.t.Progress, e.t.NotBefore = Running, q.cfg.Now(), 0, time.Time{}
 	e.t.Attempts++
-	e.userCancel = false
+	e.userCancel, e.requeue = false, false
 	ctx, cancel := context.WithCancel(q.ctx)
 	e.cancel = cancel
 
@@ -453,6 +484,10 @@ func (q *Queue) finish(e *entry, watch string, sum drive.TransferSummary, err er
 		e.t.Status, e.t.Summary, e.t.PartialFile = Done, &sum, ""
 	case kind == pdcli.KindPartial:
 		e.t.Status, e.t.Summary, e.t.PartialFile = Partial, &sum, ""
+	case kind == pdcli.KindCancelled && e.requeue:
+		// Paused: back to the queue; the interrupted attempt does not count.
+		q.removeCreated(e)
+		e.t.Status, e.t.Attempts = Queued, max(e.t.Attempts-1, 0)
 	case kind == pdcli.KindCancelled:
 		e.t.Status = Cancelled
 		q.removeCreated(e)

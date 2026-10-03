@@ -7,6 +7,7 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 
+	"example.org/quark/internal/autostart"
 	"example.org/quark/internal/settings"
 )
 
@@ -144,6 +145,34 @@ func (w *window) showPreferences() {
 	dirRow.AddSuffix(pick)
 	dl.Add(dirRow)
 	general.Add(dl)
+
+	bg := adw.NewPreferencesGroup()
+	bg.SetTitle(T("Background"))
+	runBg := adw.NewSwitchRow()
+	runBg.SetTitle(T("Run in Background"))
+	if w.tray != nil {
+		runBg.SetSubtitle(T("Keep transfers going when the window is closed"))
+	} else {
+		runBg.SetSubtitle(T("Needs a tray: enable the AppIndicator extension in Extensions"))
+		runBg.SetSensitive(false)
+	}
+	runBg.SetActive(st.RunInBackground)
+	runBg.NotifyProperty("active", func() { st.RunInBackground = runBg.Active() })
+	bg.Add(runBg)
+	login := adw.NewSwitchRow()
+	login.SetTitle(T("Start at Login"))
+	login.SetSubtitle(T("Start hidden in the top bar when you log in"))
+	login.SetActive(autostart.Enabled(AppID))
+	login.SetSensitive(!w.opts.Demo)
+	login.NotifyProperty("active", func() {
+		if err := w.setStartAtLogin(login.Active()); err != nil {
+			w.toastText(Tf("Could not change the login setting: %s", err.Error()))
+			return
+		}
+		st.StartAtLogin = login.Active()
+	})
+	bg.Add(login)
+	general.Add(bg)
 
 	adv := adw.NewPreferencesGroup()
 	adv.SetTitle(T("Troubleshooting"))

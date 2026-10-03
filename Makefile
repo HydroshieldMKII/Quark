@@ -34,7 +34,9 @@ test: test-core
 
 test-core:
 	$(GO) test -race -count=1 -shuffle=on -coverprofile=coverage.out $(CORE_PKGS)
-	$(GO) run ./tools/covercheck coverage.out
+	# The tray test needs its own session bus, never the desktop's.
+	dbus-run-session -- env QUARK_PRIVATE_BUS=1 $(GO) test -race -count=1 -coverprofile=coverage-tray.out ./internal/tray/
+	$(GO) run ./tools/covercheck coverage.out coverage-tray.out
 
 # UI smoke tests: compiled (in the SDK if needed), then run on the host under
 # a headless Wayland compositor (needs mutter and dbus-run-session).

@@ -224,6 +224,9 @@ Re-check this table at every milestone; `govulncheck` runs in CI.
 | `github.com/benbjohnson/clock` | fake clock | **archived 2023** | Rejected → `testing/synctest` |
 | `gopkg.in/natefinch/lumberjack.v2` | log rotation | last activity 2024-08 | Rejected → own rotator |
 | `github.com/leonelquinteros/gotext` | gettext catalogues | v1.7.2, active 2026-09 | Decide in M5 (vs. GLib gettext) |
+| `fyne.io/systray` | tray icon (StatusNotifierItem over D-Bus) | v1.12.2, active 2026-09, Apache-2.0 | Use (M3b) |
+| `github.com/godbus/dbus/v5` | D-Bus (via systray; tray host detection) | v5.2.2, active 2026-09, BSD-2 | Use |
+| `github.com/getlantern/systray` | tray icon | inactive since 2024-07 | Rejected |
 | Tools: golangci-lint v2.14.0, gofumpt, staticcheck, govulncheck | lint/security | all active 2026-08..10 | Use |
 | `github.com/KarpelesLab/weak`, `go4.org/unsafe/assume-no-moving-gc` | transitive (gotk4) | pulled by the bindings; `weak` fails Go's checkptr under `-race`, so UI tests disable checkptr only | Accept (no alternative to gotk4) |
 
@@ -539,6 +542,33 @@ Gate: UI smoke tests, screenshot review, no GLib criticals, keyboard-only walkth
 Jobs scheduler, upload (dialog + DnD), download, transfers view, progress strategy from fixtures,
 cancel/retry, conflict strategy UI, notifications, queue persistence, open-file flow.
 Gate: soak test 30 min green; cancelling 20 concurrent transfers leaves zero child processes.
+
+### M3b — Background mode and tray icon (requested 2026-10-03)
+
+Works with the GNOME AppIndicator extension (`gnome-shell-extension-appindicator`, enabled with
+`gnome-extensions-app`). `libappindicator-gtk3` is **not** used: GTK 3 cannot be loaded next to
+GTK 4, so Quark implements the StatusNotifierItem/dbusmenu protocol in Go (`fyne.io/systray`,
+pure D-Bus).
+
+1. Tray icon with three states (idle, transferring, attention) and a tooltip with counts.
+2. Menu: Open Quark, My Files, Upload Files…, active transfers (up to 5, with progress),
+   Pause/Resume Transfers, Quit.
+3. Keep running when the window is closed (transfers continue); first close explains it once.
+   Only when a tray host is present; otherwise closing quits as before.
+4. Start at login (off by default): `~/.config/autostart` entry launching `quark --background`.
+5. Pause stops all transfers and re-queues the running ones; Resume continues them.
+Gate: works with the extension on and off; no GTK 3 in `ldd`; tray actions marshal to the GTK
+thread; quit leaves no CLI process.
+
+### M5a — UI restyle (requested 2026-10-03)
+
+Keep GTK 4 + libadwaita; GNOME look with Quark's violet accent; iterate with headless
+screenshots (light/dark, wide/narrow) against the HIG.
+1. Violet accent through libadwaita's accent variables (light and dark tuned separately).
+2. One "+" menu (New Folder, Upload Files, Upload Folder) instead of three header buttons.
+3. Clickable breadcrumb path bar instead of a subtitle.
+4. Refined list (selection, hover, icons), empty and loading states, transfers summary.
+Gate: screenshot review of every view in light/dark and at 400 px width; UI tests pass.
 
 ### M4 — Sharing and invitations (2 days)
 
