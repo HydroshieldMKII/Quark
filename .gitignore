@@ -1,0 +1,21 @@
+# Go
+/bin/
+/build/out/
+*.test
+*.out
+coverage*.html
+/vendor/
+# Flatpak
+/.flatpak-builder/
+/build-dir/
+/repo/
+*.flatpak
+# Editors / OS
+.idea/
+.vscode/
+*~
+.DS_Store
+# Local secrets or fixtures that are not sanitised
+/internal/pdcli/testdata/raw/
+# Never commit the CLI binary
+proton-drive

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Rejects commits whose author or committer identity is an AI assistant.
+set -euo pipefail
+name="$(git var GIT_AUTHOR_IDENT) $(git var GIT_COMMITTER_IDENT)"
+if printf '%s' "$name" | grep -Eiq -e 'claude|anthropic|opus|sonnet|fable|haiku|copilot|codex|chatgpt|gemini'; then
+  echo "pre-commit hook: author/committer identity must be the human owner, not an AI assistant." >&2
+  echo "Got: $(git var GIT_AUTHOR_IDENT)" >&2
+  exit 1
+fi

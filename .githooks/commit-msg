@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Rejects any commit whose message credits an AI assistant.
+# Versioned hook; enabled with: git config core.hooksPath .githooks
+set -euo pipefail
+msg_file="$1"
+# Ignore comment lines, then look for attribution trailers or markers.
+if sed -e 's/^#.*$//' "$msg_file" | grep -Eiq \
+  -e '^[[:space:]]*co-authored-by:.*(claude|anthropic|opus|sonnet|fable|haiku|copilot|chatgpt|codex|gemini)' \
+  -e 'noreply@anthropic\.com' \
+  -e 'generated with.*(claude|anthropic)' \
+  -e 'claude[[:space:]]*code' \
+  -e 'signed-off-by:.*(claude|anthropic)' \
+  -e $'\xF0\x9F\xA4\x96'; then
+  echo "commit-msg hook: AI attribution is not allowed in commit messages (Co-Authored-By, 'Generated with', robot emoji)." >&2
+  echo "Remove the line(s) and commit again." >&2
+  exit 1
+fi
