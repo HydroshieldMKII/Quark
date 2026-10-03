@@ -110,3 +110,14 @@ func TestBuildEnvDefaults(t *testing.T) {
 		t.Fatalf("env = %q, want %q", env, want)
 	}
 }
+
+func TestParseKind(t *testing.T) {
+	for k := KindUnknown; k <= KindRefused; k++ {
+		if ParseKind(k.String()) != k {
+			t.Errorf("ParseKind(%q) != %s", k.String(), k)
+		}
+	}
+	if ParseKind("nonsense") != KindUnknown {
+		t.Error("unknown name")
+	}
+}

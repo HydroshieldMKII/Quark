@@ -8,13 +8,22 @@ UI_PKGS   := ./cmd/... ./internal/ui/...
 # Everything else must build and test without a display or GTK headers.
 CORE_PKGS := $(shell $(GO) list ./... 2>/dev/null | command grep -v -e '/internal/ui' -e '/cmd/quark' -e '/e2e')
 GOFLAGS_BUILD := -trimpath
+# GTK-dependent steps run inside the GNOME 50 SDK (per-user Flatpak) when the
+# host lacks gtk4-devel/libadwaita-devel. See build/sdk-run.sh.
+HAVE_GTK  := $(shell pkg-config --exists gtk4 libadwaita-1 2>/dev/null && echo yes)
+ifeq ($(HAVE_GTK),yes)
+IN_SDK    :=
+else
+IN_SDK    := build/sdk-run.sh
+endif
+CORE_DIRS := $(shell $(GO) list -f '{{.Dir}}' $(CORE_PKGS) 2>/dev/null | sed "s|$$(pwd)/|./|")
 
 .PHONY: all build run test test-core test-ui cover lint fmt vuln fuzz soak fixtures e2e flatpak clean deps-check
 
 all: lint test
 
 build:
-	$(GO) build $(GOFLAGS_BUILD) -o $(BIN) ./cmd/quark
+	$(IN_SDK) $(GO) build $(GOFLAGS_BUILD) -o $(BIN) ./cmd/quark
 
 run: build
 	./$(BIN) -v
@@ -25,16 +34,19 @@ test-core:
 	$(GO) test -race -count=1 -shuffle=on -coverprofile=coverage.out $(CORE_PKGS)
 	$(GO) run ./tools/covercheck coverage.out
 
-# UI smoke tests under a headless Wayland compositor (needs mutter + dbus).
+# UI smoke tests: compiled (in the SDK if needed), then run on the host under
+# a headless Wayland compositor (needs mutter and dbus-run-session).
 test-ui:
-	G_DEBUG=fatal-criticals dbus-run-session -- mutter --headless --wayland --no-x11 --sm-disable -- \
-		$(GO) test -race -count=1 -tags uitest $(UI_PKGS)
+	$(IN_SDK) $(GO) test -c -race -tags uitest -o bin/ui.test ./internal/ui
+	G_DEBUG=fatal-criticals dbus-run-session -- mutter --headless --wayland --no-x11 \
+		--virtual-monitor 1280x800 -- ./bin/ui.test -test.count=1 -test.v
 
 cover: test-core
 	$(GO) tool cover -html=coverage.out -o coverage.html
 
 lint:
-	golangci-lint run ./...
+	golangci-lint run $(CORE_DIRS)
+	$(IN_SDK) golangci-lint run $(UI_PKGS)
 
 fmt:
 	gofumpt -w .

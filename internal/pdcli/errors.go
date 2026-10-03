@@ -200,3 +200,14 @@ func truncate(s string, n int) string {
 }
 
 func isRuneStart(b byte) bool { return b&0xC0 != 0x80 }
+
+// ParseKind returns the Kind with the given name (as produced by Kind.String),
+// or KindUnknown.
+func ParseKind(name string) Kind {
+	for k, n := range kindNames {
+		if n == name {
+			return Kind(k)
+		}
+	}
+	return KindUnknown
+}
