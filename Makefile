@@ -1,5 +1,7 @@
 # Quark build entry points. CI calls the same targets.
-GO        ?= go
+# Use go from PATH, else the user-local install in ~/.local/go; tools from ~/go/bin.
+GO        ?= $(shell command -v go 2>/dev/null || echo $(HOME)/.local/go/bin/go)
+export PATH := $(dir $(GO)):$(HOME)/go/bin:$(PATH)
 APP_ID    := org.example.Quark
 PKG       := example.org/quark
 BIN       := bin/quark
@@ -54,7 +56,7 @@ fmt:
 	gofumpt -w .
 
 vuln:
-	govulncheck ./...
+	$(IN_SDK) govulncheck ./...
 
 FUZZTIME ?= 30s
 fuzz:

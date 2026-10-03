@@ -13,6 +13,7 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	glibv2 "github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
+	"github.com/diamondburned/gotk4/pkg/pango"
 
 	"example.org/quark/internal/app"
 	"example.org/quark/internal/drive"
@@ -186,7 +187,7 @@ func (v *filesView) buildList() {
 		box.Append(gtk.NewImage())
 		l := gtk.NewLabel("")
 		l.SetXAlign(0)
-		l.SetEllipsize(3) // PANGO_ELLIPSIZE_END
+		l.SetEllipsize(pango.EllipsizeEnd)
 		box.Append(l)
 		shared := gtk.NewImageFromIconName("folder-publicshare-symbolic")
 		shared.AddCSSClass("dim-label")
