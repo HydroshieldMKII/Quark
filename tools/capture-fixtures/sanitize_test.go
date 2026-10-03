@@ -18,7 +18,7 @@ var (
 func TestSanitizeForeignLeaksNothing(t *testing.T) {
 	s := NewSanitizer(realToken)
 	in := "[\n" +
-		`{"uid":"` + realUID + `","parentUid":"` + realUID2 + `","name":{"ok":true,"value":"Tax return 2025.pdf"},"keyAuthor":{"ok":false,"error":{"claimedAuthor":"alice@proton.me","error":"Signature verification failed"}},"ownedBy":{"email":"owner@proton.me"},"type":"file","mediaType":"application/pdf","directRole":"admin","creationTime":"2025-04-01T10:00:00.000Z","totalStorageSize":123456,"activeRevision":{"claimedDigests":{"sha1":"0123456789abcdef0123456789abcdef01234567"}},"treeEventScopeId":"secretscope","deprecatedShareId":"share=="}` +
+		`{"uid":"` + realUID + `","parentUid":"` + realUID2 + `","name":{"ok":true,"value":"Tax return 2025.pdf"},"keyAuthor":{"ok":false,"error":{"claimedAuthor":"alice@proton.me","error":"Signature verification failed"}},"ownedBy":{"email":"owner@example.com"},"type":"file","mediaType":"application/pdf","directRole":"admin","creationTime":"2025-04-01T10:00:00.000Z","totalStorageSize":123456,"activeRevision":{"claimedDigests":{"sha1":"0123456789abcdef0123456789abcdef01234567"}},"treeEventScopeId":"secretscope","deprecatedShareId":"share=="}` +
 		",\n" +
 		`{"uid":"drive~realInvitation","inviteeEmail":"Bob@Example.org","node":{"name":{"ok":false,"error":{"name":"Bad:Name","error":"Invalid"}}}}` +
 		"\n]\n"
@@ -43,7 +43,7 @@ func TestSanitizeForeignLeaksNothing(t *testing.T) {
 
 func TestSanitizeSandboxKeepsOwnData(t *testing.T) {
 	s := NewSanitizer(realToken)
-	in := `{"uid":"` + realUID + `","name":{"ok":true,"value":"` + realToken + `-a.txt"},"ownedBy":{"email":"owner@proton.me"},"creationTime":"2026-10-03T15:12:00.000Z","activeRevision":{"claimedSize":42,"claimedDigests":{"sha1":"0123456789abcdef0123456789abcdef01234567"}},"treeEventScopeId":"scope"}` + "\n"
+	in := `{"uid":"` + realUID + `","name":{"ok":true,"value":"` + realToken + `-a.txt"},"ownedBy":{"email":"owner@example.com"},"creationTime":"2026-10-03T15:12:00.000Z","activeRevision":{"claimedSize":42,"claimedDigests":{"sha1":"0123456789abcdef0123456789abcdef01234567"}},"treeEventScopeId":"scope"}` + "\n"
 	out := string(s.Output([]byte(in), Sandbox))
 	for _, want := range []string{FixedToken + "-a.txt", "2026-10-03T15:12:00.000Z", `"claimedSize":42`, "0123456789abcdef0123456789abcdef01234567", "user1@example.com"} {
 		if !strings.Contains(out, want) {

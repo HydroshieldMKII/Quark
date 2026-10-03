@@ -3,6 +3,7 @@ package ui
 import (
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
@@ -41,6 +42,7 @@ func Run(o Options, args []string) int {
 	var w *window
 	gapp.ConnectStartup(func() {
 		installCSS()
+		installIcons()
 		installAppActions(gapp, func() *window { return w })
 	})
 	gapp.ConnectActivate(func() {
@@ -119,7 +121,7 @@ func (w *window) scheduleScreenshot(o Options) {
 		}
 		if o.ScreenshotSection != "" && !w.selectedOnce {
 			w.selectedOnce = true
-			w.showSection(o.ScreenshotSection)
+			w.screenshotScenario(o.ScreenshotSection)
 			return true
 		}
 		if v := w.visibleFiles(); v != nil && v.b.State().Loading && time.Since(start) < 10*time.Second {
@@ -134,4 +136,35 @@ func (w *window) scheduleScreenshot(o Options) {
 		})
 		return false
 	})
+}
+
+// screenshotScenario prepares a debug screenshot. Syntax: a sidebar id,
+// optionally followed by ":open=<folder>", ":upload", ":prefs" or ":signin".
+func (w *window) screenshotScenario(spec string) {
+	id, action, _ := strings.Cut(spec, ":")
+	if w.a.Session().Phase == app.PhaseReady {
+		w.showSection(id)
+	}
+	switch {
+	case strings.HasPrefix(action, "open="):
+		name := strings.TrimPrefix(action, "open=")
+		if v := w.visibleFiles(); v != nil {
+			glib.TimeoutAdd(400, func() {
+				for _, n := range v.b.State().Visible {
+					if n.Name == name {
+						v.activate(n)
+					}
+				}
+			})
+		}
+	case action == "upload":
+		if v := w.files["my-files"]; v != nil {
+			v.enqueueUploads(v.b.State().Location, []string{"/etc/hostname"})
+		}
+		w.showSection("transfers")
+	case action == "prefs":
+		w.showPreferences()
+	case action == "signin":
+		w.a.Login()
+	}
 }

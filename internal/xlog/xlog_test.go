@@ -20,7 +20,7 @@ func TestRedactString(t *testing.T) {
 		"Node not found: Tax return 2025.pdf":                              "Node not found: <name>",
 		"Trashed node not found: secret":                                   "Trashed node not found: <name>",
 		`Name conflict on "Medical.pdf" (file) already exists`:             `Name conflict on "…" (file) already exists`,
-		"cannot read /home/user/Documents/x":                            "cannot read /home/<user>/Documents/x",
+		"cannot read /home/user/Documents/x":                               "cannot read /home/<user>/Documents/x",
 		"plain message":                                                    "plain message",
 	}
 	for in, want := range tests {
@@ -48,7 +48,7 @@ func TestRedactorAttributes(t *testing.T) {
 	)
 	out := buf.String()
 	for _, secret := range []string{
-		"bob@", "carol@", "dave@", "eve@", "frank@", "Taxes", "return.pdf", "user", "secret.txt", "X#Y", "code=1", "hunter2",
+		"bob@", "carol@", "dave@", "eve@", "frank@", "Taxes", "return.pdf", "user/secret", "secret.txt", "X#Y", "code=1", "hunter2",
 	} {
 		if strings.Contains(out, secret) {
 			t.Errorf("log leaks %q:\n%s", secret, out)

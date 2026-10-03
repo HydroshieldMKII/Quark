@@ -29,6 +29,7 @@ func run() int {
 	verbose := flag.Bool("v", false, "also log to stderr, with debug detail")
 	cliPath := flag.String("cli", "", "use this proton-drive binary for this session")
 	demoMode := flag.Bool("demo", false, "show sample data; never runs the Proton Drive CLI")
+	demoSignedOut := flag.Bool("demo-signed-out", false, "with --demo: start signed out")
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	shot := flag.String("screenshot", "", "debug: render the window to this PNG file and quit")
 	shotSection := flag.String("screenshot-section", "", "debug: sidebar entry to show before the screenshot")
@@ -85,6 +86,7 @@ func run() int {
 	)
 	if *demoMode {
 		d := demo.New(time.Now())
+		d.LoggedIn = !*demoSignedOut
 		runner = d
 		findBinary = func(string) (string, []string) { return "demo", nil }
 		newBackend = func(string, settings.Settings) app.Backend { return d }

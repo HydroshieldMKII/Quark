@@ -5,7 +5,6 @@ import (
 
 	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
-	glibv2 "github.com/diamondburned/gotk4/pkg/glib/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 
 	"example.org/quark/internal/settings"
@@ -125,7 +124,7 @@ func (w *window) showPreferences() {
 		if st.DownloadDir != "" {
 			return st.DownloadDir
 		}
-		return glibv2.GetUserSpecialDir(glibv2.UserDirectoryDownload)
+		return downloadsDir()
 	}
 	dirRow.SetSubtitle(dirSub())
 	pick := gtk.NewButtonFromIconName("folder-open-symbolic")
@@ -166,10 +165,8 @@ func (w *window) showAbout() {
 	d.SetApplicationName("Quark")
 	d.SetApplicationIcon(AppID)
 	d.SetVersion(w.opts.Version)
-	d.SetDeveloperName("The Quark contributors")
+	d.SetDeveloperName(T("Quark contributors"))
 	d.SetLicenseType(gtk.LicenseGPL30)
-	d.SetWebsite("https://example.org/quark")
-	d.SetIssueURL("https://example.org/quark/issues")
 	d.SetComments(T("An unofficial client for Proton Drive. Quark is not affiliated with or endorsed by Proton AG.") + "\n\n" +
 		T("Quark works through the official Proton Drive CLI. Official CLI builds send crash reports and usage metrics to Proton."))
 	d.Present(w.win)

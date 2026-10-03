@@ -773,7 +773,7 @@ func (v *filesView) chooseDownload() {
 	d.SetTitle(T("Download To"))
 	dir := v.w.a.Settings().DownloadDir
 	if dir == "" {
-		dir = glibv2.GetUserSpecialDir(glibv2.UserDirectoryDownload)
+		dir = downloadsDir()
 	}
 	if dir != "" {
 		d.SetInitialFolder(gio.NewFileForPath(dir))

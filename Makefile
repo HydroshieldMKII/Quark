@@ -37,7 +37,9 @@ test-core:
 # UI smoke tests: compiled (in the SDK if needed), then run on the host under
 # a headless Wayland compositor (needs mutter and dbus-run-session).
 test-ui:
-	$(IN_SDK) $(GO) test -c -race -tags uitest -o bin/ui.test ./internal/ui
+	# -race implies checkptr, which a gotk4 dependency (KarpelesLab/weak) trips
+	# by design; keep the race detector and disable only checkptr.
+	$(IN_SDK) $(GO) test -c -race -gcflags=all=-d=checkptr=0 -trimpath -tags uitest -o bin/ui.test ./internal/ui
 	G_DEBUG=fatal-criticals dbus-run-session -- mutter --headless --wayland --no-x11 \
 		--virtual-monitor 1280x800 -- ./bin/ui.test -test.count=1 -test.v
 

@@ -99,12 +99,23 @@ func newSessionPages(w *window) *sessionPages {
 	sp.SetSizeRequest(32, 32)
 	sp.SetHAlign(gtk.AlignCenter)
 	s.openBrowser = pill(T("Open Browser"), true, func() { w.openURI(s.loginURL) })
-	s.copyLink = pill(T("Copy Link"), false, func() {
+	// Secondary actions are flat, per the HIG: one prominent action per page.
+	s.copyLink = gtk.NewButtonWithLabel(T("Copy Link"))
+	s.copyLink.AddCSSClass("flat")
+	s.copyLink.ConnectClicked(func() {
 		w.win.Clipboard().SetText(s.loginURL)
 		w.toastText(T("Sign-in link copied"))
 	})
-	lbox := buttons(s.openBrowser, s.copyLink, pill(T("Cancel"), false, w.a.CancelLogin))
+	cancel := gtk.NewButtonWithLabel(T("Cancel"))
+	cancel.AddCSSClass("flat")
+	cancel.ConnectClicked(w.a.CancelLogin)
+	secondary := gtk.NewBox(gtk.OrientationHorizontal, 6)
+	secondary.SetHAlign(gtk.AlignCenter)
+	secondary.Append(s.copyLink)
+	secondary.Append(cancel)
+	lbox := buttons(s.openBrowser)
 	lbox.Prepend(sp)
+	lbox.Append(secondary)
 	s.loggingin.SetChild(lbox)
 	s.pages["loggingin"] = page(s.loggingin)
 

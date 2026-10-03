@@ -43,7 +43,10 @@ func TestMain(m *testing.M) {
 	q := jobs.NewQueue(jobs.Config{Dispatcher: loop, Runner: func() jobs.Runner { return backend }})
 	gapp := adw.NewApplication(AppID+".Test", gio.ApplicationNonUnique)
 	code := 0
-	gapp.ConnectStartup(func() { installCSS() })
+	gapp.ConnectStartup(func() {
+		installCSS()
+		installIcons()
+	})
 	gapp.ConnectActivate(func() {
 		testWin = newWindow(gapp, Options{App: a, Queue: q, Demo: true, Version: "test"})
 		testWin.win.Present()

@@ -31,6 +31,14 @@ test strategy, methodology (GitHub Spec Kit) and milestones to follow.
 - `os/exec` only in `internal/pdcli` and `internal/testutil`.
 - `internal/ui` never imports `internal/pdcli` directly.
 
-## Commands (fill in once the Makefile exists in M0)
+## Commands
 
-- Build: `make build` · Test: `make test` · UI tests: `make test-ui` · Lint: `make lint`
+- Core tests (race, coverage gates): `make test` · Lint: `make lint` · Fuzz: `make fuzz`
+- Build the app: `make build` (runs inside the GNOME 50 SDK via `build/sdk-run.sh` when the
+  host lacks gtk4-devel/libadwaita-devel) · Run with sample data: `./bin/quark --demo`
+- UI smoke tests: `make test-ui` (isolated headless mutter via `build/headless.sh`)
+- Debug screenshots: `build/headless.sh -- ./bin/quark --demo --screenshot out.png
+  --screenshot-section my-files[:open=Documents|:upload|:prefs|:signin] --screenshot-size 1100x720`
+- Real-account fixtures (asks first, sandboxed): `make fixtures`
+- Module path and app ID are placeholders (`example.org/quark`, `org.example.Quark`) until the
+  publishing namespace is chosen. Keep personal data (names, emails, home paths) out of the repo.

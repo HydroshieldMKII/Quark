@@ -34,12 +34,11 @@ Methodology: **GitHub Spec Kit** (lightweight spec → plan → tasks → implem
 | Flatpak | 1.18.2 installed; `flatpak-builder 1.4.12` available in dnf; Flathub offers `org.gnome.Sdk//51` and `org.freedesktop.Sdk.Extension.golang` 1.27.1 (25.08 and 26.08) |
 | libsecret | `libsecret 0.21.8` installed, `secret-tool` available (GNOME Keyring is the secret service) |
 | gcc | 16.2.1 (needed for cgo) |
-| Project dir | `/home/user/Quark` is empty, not a git repo |
+| Project dir | `~/Quark` is empty, not a git repo |
 
 ### 1.2 The CLI binary
 
-* Location: `/home/user/Downloads/proton-drive` (118 MB, ELF x86-64, dynamically linked,
-  SHA-256 `9443d771719c892790db17e6f02ecd99ad7c53593329f3a67c77677dce577735`).
+* Location: `~/Downloads/proton-drive` (118 MB, ELF x86-64, dynamically linked).
 * `./proton-drive --version` → `Proton Drive CLI cli-drive@0.8.0+06e8c605`, `Proton Drive SDK js@0.21.0+06e8c605`,
   and it prints `You are running the latest version.` (it checks for updates on `--version`).
 * Runtime: Bun single-file executable. Startup of a one-shot command: **0.11 s wall, ~125 MB RSS**.
@@ -224,6 +223,7 @@ Re-check this table at every milestone; `govulncheck` runs in CI.
 | `gopkg.in/natefinch/lumberjack.v2` | log rotation | last activity 2024-08 | Rejected → own rotator |
 | `github.com/leonelquinteros/gotext` | gettext catalogues | v1.7.2, active 2026-09 | Decide in M5 (vs. GLib gettext) |
 | Tools: golangci-lint v2.14.0, gofumpt, staticcheck, govulncheck | lint/security | all active 2026-08..10 | Use |
+| `github.com/KarpelesLab/weak`, `go4.org/unsafe/assume-no-moving-gc` | transitive (gotk4) | pulled by the bindings; `weak` fails Go's checkptr under `-race`, so UI tests disable checkptr only | Accept (no alternative to gotk4) |
 
 ---
 
@@ -482,7 +482,7 @@ How to run it:
 
 ```bash
 uv tool install specify-cli            # or: uvx --from specify-cli specify
-cd /home/user/Quark && git init
+cd ~/Quark && git init
 specify init . --integration claude    # older releases use --ai claude; check `specify init --help`
 # then in Claude Code:
 /speckit-constitution  → paste §6.7 + §3 decisions + §4.1 import rules
@@ -593,7 +593,7 @@ pinning; sync folder (watch + upload) if the owner wants it.
 
 ## 10. Decisions needed from the owner (defaults apply if unanswered)
 
-* **D1** App ID: `org.example.Quark` (the owner's GitHub user), unless the owner prefers another namespace.
+* **D1** App ID and module path: placeholders `org.example.Quark` and `example.org/quark` (reserved example domain) until the publishing namespace is chosen; switching is one search-and-replace.
 * **D2** Bundle the CLI in the Flatpak? The CLI source is MIT (Proton AG), so building or redistributing it is
   permitted with the notice. Default stays "no" for v1 (user supplies the official binary); revisit in M6.
 * **D3** Photos/albums in v1? Default: no (v1.1).
