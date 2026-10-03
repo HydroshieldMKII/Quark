@@ -353,7 +353,7 @@ func (q *Queue) start(e *entry, r Runner) {
 	// target did not exist before: then the file is certainly ours.
 	var watch string
 	if t.Kind == Download && !t.IsFolder && t.Name != "" {
-		target := filepath.Join(t.Local, t.Name)
+		target := filepath.Join(t.Local, drive.LocalName(t.Name))
 		if _, err := os.Lstat(target); errors.Is(err, os.ErrNotExist) {
 			watch = target
 		}

@@ -622,7 +622,7 @@ func (v *filesView) openFile(n drive.Node) {
 		v.w.toastText(Tf("Could not prepare the file: %s", err.Error()))
 		return
 	}
-	target := filepath.Join(dir, n.Name)
+	target := filepath.Join(dir, drive.LocalName(n.Name))
 	// A previous copy in our own cache is replaced: the remote may have changed.
 	_ = os.Remove(target)
 	id := v.w.q.Add(jobs.Transfer{

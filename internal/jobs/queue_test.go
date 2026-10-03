@@ -550,3 +550,24 @@ func TestNoRunnerMeansNoStart(t *testing.T) {
 		t.Fatal("unknown size fraction")
 	}
 }
+
+func TestProgressUsesTheCLILocalName(t *testing.T) {
+	f := newFixture(t)
+	dir := t.TempDir()
+	target := filepath.Join(dir, "what_now_.mkv") // the CLI's local name for "what?now*.mkv"
+	id := f.q.Add(Transfer{Kind: Download, Name: "what?now*.mkv", Size: 10, Local: dir, Remote: "/my-files/x", FileStrategy: "rename", FolderStrategy: "merge"})
+	c := f.next()
+	if err := os.WriteFile(target, make([]byte, 5), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for f.q.Items()[0].PartialFile != target {
+		f.l.drain()
+		if time.Now().After(deadline) {
+			t.Fatalf("progress not tracked on the sanitized name: %+v", f.q.Items()[0])
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+	c.resp <- result{}
+	f.settle(id, Done)
+}

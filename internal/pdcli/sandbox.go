@@ -303,6 +303,7 @@ func (s *SandboxRunner) trashOnly(_ map[string]string, a []string) error {
 }
 
 func (s *SandboxRunner) local(p string) error {
+	p = UnescapeLocal(p) // the client escapes glob characters for the CLI
 	if !filepath.IsAbs(p) {
 		return refuse("local path %q must be absolute", p)
 	}

@@ -354,7 +354,11 @@ func (c *Client) Upload(ctx context.Context, s UploadSpec) (drive.TransferSummar
 	if s.SkipThumbnails {
 		opts = append(opts, "--skip-thumbnails")
 	}
-	return c.transfer(ctx, cmd, argv("filesystem", "upload", opts, append(append([]string(nil), s.LocalPaths...), s.Parent)...))
+	pos := make([]string, 0, len(s.LocalPaths)+1)
+	for _, p := range s.LocalPaths {
+		pos = append(pos, EscapeLocal(p))
+	}
+	return c.transfer(ctx, cmd, argv("filesystem", "upload", opts, append(pos, s.Parent)...))
 }
 
 // DownloadSpec describes a download.
@@ -379,7 +383,7 @@ func (c *Client) Download(ctx context.Context, s DownloadSpec) (drive.TransferSu
 		return drive.TransferSummary{}, usageErr(cmd, "conflict strategies must be set explicitly")
 	}
 	opts := []string{"--file-conflict-strategy", string(s.FileStrategy), "--folder-conflict-strategy", string(s.FolderStrategy)}
-	return c.transfer(ctx, cmd, argv("filesystem", "download", opts, append(append([]string(nil), s.Remotes...), s.LocalDir)...))
+	return c.transfer(ctx, cmd, argv("filesystem", "download", opts, append(append([]string(nil), s.Remotes...), EscapeLocal(s.LocalDir))...))
 }
 
 func (c *Client) transfer(ctx context.Context, command string, args []string) (drive.TransferSummary, error) {

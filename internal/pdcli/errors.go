@@ -135,7 +135,7 @@ var classification = []rule{
 	{KindUsage, regexp.MustCompile(`^(Command not found:|Expected \d+ arguments, got \d+|Missing required option:|Unknown option '|Option '.*' argument (missing|ambiguous)|Unexpected argument '|Invalid conflict strategy "|Ambiguous conflict strategy "|Invalid node type:|Invalid role:|Invalid expiration date:|Invalid invitation UID:|Cannot specify name when copying multiple files|At least one )`)},
 	// Not-found messages embed the user's file name ("Node not found: <name>"), so they
 	// must be matched before any rule that is not anchored at the start.
-	{KindNotFound, regexp.MustCompile(`^(Node not found|Trashed node not found|Root node not found|Device not found|Photo not found|Album not found)\b`)},
+	{KindNotFound, regexp.MustCompile(`^(Node not found|Trashed node not found|Root node not found|Device not found|Photo not found|Album not found|No paths matched:)`)},
 	{KindConflict, regexp.MustCompile(`^Name conflict on ".*" \((file|folder)\) already exists$|already exists\.?$`)},
 	{KindRateLimited, regexp.MustCompile(`^(Rate limited|Too many server requests)`)},
 	{KindServer, regexp.MustCompile(`^Too many server errors`)},

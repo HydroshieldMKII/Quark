@@ -84,3 +84,21 @@ func ByUID(uid string) string { return SectionMyFiles.Root() + "/" + uid }
 // TrashPath returns the path of a trashed node. Trash is addressed by name only
 // (first match), so callers must check the name is unique in the trash listing.
 func TrashPath(name string) string { return SectionTrash.Root() + "/" + EscapeSegment(name) }
+
+// localIllegal mirrors the CLI's ILLEGAL_SEGMENT_CHARS
+// (cli/src/commands/fileSystem/downloadPathValidation.ts).
+var localIllegal = regexp.MustCompile("[\x00-\x1f\x7f<>:\"|?*\\\\/]")
+
+// LocalName returns the file name the CLI uses when it downloads a node
+// named name on Linux: characters invalid on common file systems become
+// "_", and "." / ".." are made safe (verified with cli-drive 0.8.0).
+func LocalName(name string) string {
+	s := localIllegal.ReplaceAllString(name, "_")
+	switch s {
+	case "", ".":
+		return "_"
+	case "..":
+		return "__"
+	}
+	return s
+}

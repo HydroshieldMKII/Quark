@@ -20,7 +20,7 @@ IN_SDK    := build/sdk-run.sh
 endif
 CORE_DIRS := $(shell $(GO) list -f '{{.Dir}}' $(CORE_PKGS) 2>/dev/null | sed "s|$$(pwd)/|./|")
 
-.PHONY: all build run test test-core test-ui cover lint fmt vuln fuzz soak fixtures e2e flatpak clean deps-check
+.PHONY: install-user uninstall-user all build run test test-core test-ui cover lint fmt vuln fuzz soak fixtures e2e flatpak clean deps-check
 
 all: lint test
 
@@ -80,3 +80,22 @@ flatpak:
 
 clean:
 	rm -rf bin coverage.out coverage.html build-dir .flatpak-builder
+
+# Installs Quark for the current user: binary, icons and launcher entry, so it
+# shows in the app grid and can be pinned to the dash.
+USER_PREFIX := $(HOME)/.local
+ICONS       := $(USER_PREFIX)/share/icons/hicolor
+install-user: build
+	install -Dm755 $(BIN) $(USER_PREFIX)/bin/quark
+	install -Dm644 data/icons/hicolor/scalable/apps/$(APP_ID).svg $(ICONS)/scalable/apps/$(APP_ID).svg
+	install -Dm644 data/icons/hicolor/symbolic/apps/$(APP_ID)-symbolic.svg $(ICONS)/symbolic/apps/$(APP_ID)-symbolic.svg
+	mkdir -p $(USER_PREFIX)/share/applications
+	sed 's|@BINDIR@|$(USER_PREFIX)/bin|' data/$(APP_ID).desktop.in > $(USER_PREFIX)/share/applications/$(APP_ID).desktop
+	desktop-file-validate $(USER_PREFIX)/share/applications/$(APP_ID).desktop
+	-update-desktop-database -q $(USER_PREFIX)/share/applications
+	-gtk-update-icon-cache -q -f -t $(ICONS)
+
+uninstall-user:
+	rm -f $(USER_PREFIX)/bin/quark $(USER_PREFIX)/share/applications/$(APP_ID).desktop \
+		$(ICONS)/scalable/apps/$(APP_ID).svg $(ICONS)/symbolic/apps/$(APP_ID)-symbolic.svg
+	-update-desktop-database -q $(USER_PREFIX)/share/applications

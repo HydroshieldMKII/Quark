@@ -97,3 +97,26 @@ func TestByUIDAndTrashPath(t *testing.T) {
 		t.Fatalf("TrashPath = %q", got)
 	}
 }
+
+func TestLocalName(t *testing.T) {
+	tests := map[string]string{
+		"report.pdf":        "report.pdf",
+		"star*name.txt":     "star_name.txt",
+		"question?mark.txt": "question_mark.txt",
+		`back\slash.txt`:    "back_slash.txt",
+		`a<b>c:d"e|f`:       "a_b_c_d_e_f",
+		"tab\there":         "tab_here",
+		"a/b":               "a_b",
+		"Playlist [6].m3u":  "Playlist [6].m3u",
+		"été 日本":            "été 日本",
+		"":                  "_",
+		".":                 "_",
+		"..":                "__",
+		"...":               "...",
+	}
+	for in, want := range tests {
+		if got := LocalName(in); got != want {
+			t.Errorf("LocalName(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

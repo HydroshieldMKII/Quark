@@ -10,6 +10,7 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 
 	"example.org/quark/internal/app"
+	"example.org/quark/internal/drive"
 	"example.org/quark/internal/jobs"
 )
 
@@ -227,7 +228,7 @@ func transferSubtitle(t jobs.Transfer) string {
 func (v *transfersView) showLocal(t jobs.Transfer) {
 	path := t.Local
 	if !t.IsFolder {
-		path = filepath.Join(t.Local, t.Name)
+		path = filepath.Join(t.Local, drive.LocalName(t.Name))
 	}
 	l := gtk.NewFileLauncher(gio.NewFileForPath(path))
 	l.OpenContainingFolder(context.Background(), &v.w.win.Window, func(res gio.AsyncResulter) {

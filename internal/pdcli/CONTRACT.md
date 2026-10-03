@@ -88,6 +88,15 @@ Name error forms: `{}` (Error) or `{name: placeholder, error: string}` (InvalidN
   match). Restore/delete of duplicate names in trash is ambiguous; Quark refuses it.
 * `/devices/<device-name>/…`: device matched by name.
 
+## Local paths (verified with e2e/names_test.go)
+
+* **Local paths are globs.** Any local path containing `*`, `?`, `[` or `{` is expanded as a
+  glob (`localPath.ts`); "No paths matched" otherwise. `EscapeLocal` writes `\*` `\?` `\[` `\{`
+  `\}`, leaves `]` as is, and writes a backslash as `[\\]` (`\\` does not match).
+* **Downloaded names are sanitized.** Control characters and `< > : " | ? * \ /` become `_`;
+  `.` and `..` become `_` and `__` (`sanitizePathSegmentForLocalFilesystem`). `drive.LocalName`
+  mirrors it.
+
 ## Commands Quark uses
 
 | Command | Args | Notes |
