@@ -11,6 +11,8 @@ ExecStartPre=/usr/bin/mkdir -p %h/ProtonDrive
 ExecStart=%h/.local/bin/quark-mount %h/ProtonDrive
 ExecStop=/usr/bin/fusermount3 -u %h/ProtonDrive
 Restart=on-failure
+# Exit 78: not signed in. Retrying cannot help; sign in, then start the service again.
+RestartPreventExitStatus=78
 RestartSec=10
 
 [Install]

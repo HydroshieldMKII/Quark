@@ -33,6 +33,10 @@ import (
 
 var version = "0.1.0-dev"
 
+// exitNotSignedIn is EX_CONFIG: the unit file lists it in RestartPreventExitStatus so that a
+// missing sign-in is one failed state instead of a restart loop.
+const exitNotSignedIn = 78
+
 func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
 
 func usage(w *os.File) {
@@ -121,7 +125,7 @@ func run(args []string, stdout, stderr *os.File) int {
 	if _, err := client.Roots(ctx); err != nil {
 		if pdcli.IsKind(err, pdcli.KindNotLoggedIn) {
 			_, _ = fmt.Fprintln(stderr, "not signed in: run `proton-drive auth login` first")
-			return 1
+			return exitNotSignedIn
 		}
 		logger.Warn("Proton Drive not reachable at start; mounting anyway", "err", err)
 		_, _ = fmt.Fprintln(stderr, "Proton Drive not reachable; mounting offline:", err)
