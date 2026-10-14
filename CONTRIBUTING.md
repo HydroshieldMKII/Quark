@@ -30,7 +30,7 @@ uses automatically. See the README for the full list.
 
 ## Layout
 
-See "Project layout" in the README. `.claude/skills/` and `.specify/` hold the Spec Kit
+See `docs/ARCHITECTURE.md` for the layout. `.claude/skills/` and `.specify/` hold the Spec Kit
 workflow used for feature work; `AGENTS.md` (root and per package) is what coding agents follow.
 
 CI skips the build and test jobs for documentation-only changes (`*.md`, `docs/`, templates).
