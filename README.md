@@ -52,7 +52,8 @@ Without the GTK development packages, `make build` builds inside the GNOME SDK t
 | [`docs/MOUNT.md`](docs/MOUNT.md) | Using and troubleshooting the folder mount |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | One-page map of the code and its rules |
 | [`docs/PLAN.md`](docs/PLAN.md) | Design record: verified CLI facts, decisions, history |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Setup, checks, release process |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Setup and checks for contributors |
+| [`docs/RELEASING.md`](docs/RELEASING.md) | Cutting a release (maintainers) |
 | [`AGENTS.md`](AGENTS.md) | Rules for coding agents and contributors |
 | [`SECURITY.md`](SECURITY.md) | Reporting a vulnerability (privately) |
 
