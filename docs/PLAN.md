@@ -1,6 +1,6 @@
 # Quark — a GNOME client for Proton Drive (implementation plan)
 
-Status: plan v1, written 2026-10-03. Audience: the implementing agent (Claude Opus) and the
+Status: plan v1. Audience: the implementing agent (Claude Opus) and the
 project owner. Everything in section 1 was verified on this machine; everything else is a decision
 or an instruction. Do not re-derive section 1, build on it.
 
@@ -22,7 +22,7 @@ Methodology: **GitHub Spec Kit** (lightweight spec → plan → tasks → implem
 
 ---
 
-## 1. Verified facts (measured on 2026-10-03, do not guess these again)
+## 1. Verified facts (measured, do not guess these again)
 
 ### 1.1 Host environment
 
@@ -85,7 +85,7 @@ root folder is `/my-files`; other sections seen in the binary: `/devices`, `/sha
 * Exit codes found in the binary: `0` success, `1` error, `2` argument/usage error (also used by the
   REPL), `130` SIGINT during an interactive prompt.
 * Unknown command → prints usage, exit 1.
-* `-v` writes timestamped, ANSI-coloured log lines to stderr (`2026-10-03T15:08:07.814Z INFO [cli] ...`).
+* `-v` writes timestamped, ANSI-coloured log lines to stderr (`<timestamp> INFO [cli] ...`).
 * Conflict prompts are interactive (readline). **Always pass `-f` and `-d` (and `-c` for photos)** so
   the CLI never prompts; additionally run it without a controlling TTY so any `/dev/tty` open fails
   fast instead of hanging.
@@ -126,7 +126,7 @@ cache `~/.cache/proton-drive-cli/` (`cache-crypto.sqlite`, `cache-entities.sqlit
 process that finds a live pid simply does not listen for events (`canListenForEvents() == false`).
 It is not a hard mutual exclusion, but concurrent processes share the two SQLite caches.
 
-### 1.7 CLI contract from source (resolved 2026-10-03)
+### 1.7 CLI contract from source
 
 The CLI is open source (MIT, Proton AG) at github.com/ProtonDriveApps/sdk; CLI 0.8.0 is in tag
 `js/v0.21.1`. Its source was read and summarised in `internal/pdcli/CONTRACT.md`, which is now the
@@ -147,16 +147,16 @@ reference for parsers. Findings that change the design:
 * Options must follow `<group> <command>`.
 * Official builds send crash reports and metrics to Proton. Mention it in the About dialog.
 
-Confirmed on 2026-10-03 with recorded fixtures (`internal/pdcli/testdata/cli/0.8.0`): every shape
+Confirmed with recorded fixtures (`internal/pdcli/testdata/cli/0.8.0`): every shape
 and error above matches. Not yet seen in real output: network and permission errors (they need a
 broken connection or a foreign share to provoke). Measured: a ~4,900-item trash takes 1–2 minutes
 to list and ~360 MB of memory, so listings get a 10-minute limit and at most 2 run at once.
 
 ### 1.8 Library versions chosen
 
-* `github.com/diamondburned/gotk4/pkg` — latest tag **v0.4.1 (2026-08-09)**; branches `4` (GTK 4.14),
-  `4.16`, **`4.22`** (matches Fedora's GTK 4.22.5). Last commit 2026-08-09. cgo required.
-* `github.com/diamondburned/gotk4-adwaita/pkg` — pseudo-version 2026-08-08; branches `adw-1.5`,
+* `github.com/diamondburned/gotk4/pkg` — latest tag **v0.4.1**; branches `4` (GTK 4.14),
+  `4.16`, **`4.22`** (matches Fedora's GTK 4.22.5). cgo required.
+* `github.com/diamondburned/gotk4-adwaita/pkg` — pseudo-version; branches `adw-1.5`,
   `adw-1.6`, `adw-1.7`, **`adw-1.9`** (matches Fedora's libadwaita 1.9.4). AGPL-3.0 licensed →
   Quark itself will be **GPL-3.0-or-later** (compatible; AGPL network clause irrelevant for a desktop app).
 * Bindings generated for an older GTK still run against a newer GTK (ABI is backward compatible);
@@ -209,27 +209,27 @@ to list and ~360 MB of memory, so listings get a 10-minute limit and at most 2 r
 | License | GPL-3.0-or-later | Required by gotk4-adwaita's AGPL. |
 | App ID | `org.example.Quark` (**decision D1 for the owner**) | Flathub needs a verifiable domain or GitHub namespace. |
 
-### 3.1 Dependency policy and vetted list (checked 2026-10-03)
+### 3.1 Dependency policy and vetted list
 
 A dependency is allowed only if it is actively maintained (commits within ~6 months, not archived),
 widely used or the only credible option, and GPL-3.0-compatible. Prefer the standard library.
 Re-check this table at every milestone; `govulncheck` runs in CI.
 
-| Module | Use | Status on 2026-10-03 | Verdict |
+| Module | Use | Status | Verdict |
 |---|---|---|---|
-| `github.com/diamondburned/gotk4/pkg` | GTK 4 bindings | v0.4.1 (2026-08-09), 705★, active, AGPL-3.0 | Use (branch `4.22`) |
-| `github.com/diamondburned/gotk4-adwaita/pkg` | libadwaita bindings | pseudo-version 2026-08-08, active, AGPL-3.0 | Use (branch `adw-1.9`) |
-| `go.uber.org/goleak` | goroutine leak checks in tests | v1.3.0, repo active 2026-09, 5.3k★, MIT | Use (test only) |
-| `pgregory.net/rapid` | property-based tests | v1.3.0 (2026-04-30), active, MPL-2.0 | Use (test only) |
+| `github.com/diamondburned/gotk4/pkg` | GTK 4 bindings | v0.4.1, 705★, active, AGPL-3.0 | Use (branch `4.22`) |
+| `github.com/diamondburned/gotk4-adwaita/pkg` | libadwaita bindings | pseudo-version, active, AGPL-3.0 | Use (branch `adw-1.9`) |
+| `go.uber.org/goleak` | goroutine leak checks in tests | v1.3.0, repo active, 5.3k★, MIT | Use (test only) |
+| `pgregory.net/rapid` | property-based tests | v1.3.0, active, MPL-2.0 | Use (test only) |
 | `github.com/benbjohnson/clock` | fake clock | **archived 2023** | Rejected → `testing/synctest` |
-| `gopkg.in/natefinch/lumberjack.v2` | log rotation | last activity 2024-08 | Rejected → own rotator |
-| `github.com/leonelquinteros/gotext` | gettext catalogues | v1.7.2, active 2026-09 | Decide in M5 (vs. GLib gettext) |
+| `gopkg.in/natefinch/lumberjack.v2` | log rotation | inactive | Rejected → own rotator |
+| `github.com/leonelquinteros/gotext` | gettext catalogues | v1.7.2, active | Decide in M5 (vs. GLib gettext) |
 | `fyne.io/systray` | tray icon | v1.12.2, active, Apache-2.0, but a data race in its menu code | Rejected → own SNI on godbus |
-| `github.com/godbus/dbus/v5` | D-Bus (via systray; tray host detection) | v5.2.2, active 2026-09, BSD-2 | Use |
-| `github.com/getlantern/systray` | tray icon | inactive since 2024-07 | Rejected |
-| `github.com/hanwen/go-fuse/v2` | FUSE mount | v2.11.0, active 2026-10, BSD-3, 2.4k★ | Use (M7) |
-| `bazil.org/fuse` | FUSE mount | inactive since 2023-12 | Rejected |
-| Tools: golangci-lint v2.14.0, gofumpt, staticcheck, govulncheck | lint/security | all active 2026-08..10 | Use |
+| `github.com/godbus/dbus/v5` | D-Bus (via systray; tray host detection) | v5.2.2, active, BSD-2 | Use |
+| `github.com/getlantern/systray` | tray icon | inactive | Rejected |
+| `github.com/hanwen/go-fuse/v2` | FUSE mount | v2.11.0, active, BSD-3, 2.4k★ | Use (M7) |
+| `bazil.org/fuse` | FUSE mount | inactive | Rejected |
+| Tools: golangci-lint v2.14.0, gofumpt, staticcheck, govulncheck | lint/security | all active | Use |
 | `github.com/KarpelesLab/weak`, `go4.org/unsafe/assume-no-moving-gc` | transitive (gotk4) | pulled by the bindings; `weak` fails Go's checkptr under `-race`, so UI tests disable checkptr only | Accept (no alternative to gotk4) |
 
 ---
@@ -545,7 +545,7 @@ Jobs scheduler, upload (dialog + DnD), download, transfers view, progress strate
 cancel/retry, conflict strategy UI, notifications, queue persistence, open-file flow.
 Gate: soak test 30 min green; cancelling 20 concurrent transfers leaves zero child processes.
 
-### M3b — Background mode and tray icon (requested 2026-10-03)
+### M3b — Background mode and tray icon (requested)
 
 Works with the GNOME AppIndicator extension (`gnome-shell-extension-appindicator`, enabled with
 `gnome-extensions-app`). `libappindicator-gtk3` is **not** used: GTK 3 cannot be loaded next to
@@ -561,10 +561,10 @@ pure D-Bus).
 5. Pause stops all transfers and re-queues the running ones; Resume continues them.
 Gate: works with the extension on and off; no GTK 3 in `ldd`; tray actions marshal to the GTK
 thread; quit leaves no CLI process.
-Status (2026-10-03): done. The protocol is implemented in-house on godbus (`internal/tray`);
+Status: done. The protocol is implemented in-house on godbus (`internal/tray`);
 `fyne.io/systray` was dropped after the race detector found a data race in it.
 
-### M5a — UI restyle (requested 2026-10-03)
+### M5a — UI restyle (requested)
 
 Keep GTK 4 + libadwaita; GNOME look with Quark's violet accent; iterate with headless
 screenshots (light/dark, wide/narrow) against the HIG.
@@ -573,7 +573,7 @@ screenshots (light/dark, wide/narrow) against the HIG.
 3. Clickable breadcrumb path bar instead of a subtitle.
 4. Refined list (selection, hover, icons), empty and loading states, transfers summary.
 Gate: screenshot review of every view in light/dark and at 400 px width; UI tests pass.
-Status (2026-10-03): done, plus full-color file icons and a compact layout below 600 sp
+Status: done, plus full-color file icons and a compact layout below 600 sp
 (folder name instead of the path bar, Size/Modified hidden).
 
 ### M4 — Sharing and invitations (2 days)
@@ -582,7 +582,7 @@ Share dialog (members, invite, roles, remove, leave), public link section (creat
 password, expiry, copy), invitations view (accept/reject), badges in the list.
 Gate: fixtures-driven tests for every sharing command; dialogs reviewed against HIG.
 
-Status of M4 (2026-10-03): done — share dialog (link on/off, copy, access, expiry, password;
+Status of M4: done — share dialog (link on/off, copy, access, expiry, password;
 people with permissions), invitations banner and review dialog, Leave. Link updates re-send
 password and expiry because the CLI replaces all link settings.
 
@@ -594,7 +594,7 @@ Preferences dialog, shortcuts dialog, about dialog, adaptive breakpoints, a11y l
 (explains download from proton.me and lets the user pick the file).
 Gate: `appstreamcli validate`, `desktop-file-validate`, HIG checklist in §5.3.
 
-Status of M5 (2026-10-03): French translation done (embedded .po catalogues, own loader, tests
+Status of M5: French translation done (embedded .po catalogues, own loader, tests
 for completeness and format verbs); i18n backend decision: own loader, no gotext dependency.
 
 ### M6 — Packaging and release (1–2 days)
@@ -608,12 +608,12 @@ and **no** broad filesystem access (portals do the file picking). The CLI binary
 offers to copy it there from a user-picked file. RPM spec for Fedora. Tagged release, CHANGELOG,
 reproducible build notes.
 Gate: Flatpak builds in CI, runs on a clean Fedora 44 VM, login and a round trip work inside the sandbox.
-Status (2026-10-03): manifest `build/flatpak/org.example.Quark.yml`, installed per user with
+Status: manifest `build/flatpak/org.example.Quark.yml`, installed per user with
 `make flatpak` (org.flatpak.Builder Flatpak, no sudo). The official CLI is bundled (MIT), pinned by
 SHA-512. Background/autostart via the Background portal. Open: CI job, vendored modules for a
 Flathub submission, homepage URL once published.
 
-### M7 — Folder mount (FUSE), persistent listing cache, polish (done 2026-10-03)
+### M7 — Folder mount (FUSE), persistent listing cache, polish (done)
 
 * `internal/fusefs` + `cmd/quark-mount`: Proton Drive as a folder with `hanwen/go-fuse` v2
   (BSD-3, active). Listings cached per folder (TTL), full-file download on open into a size-bounded
@@ -628,9 +628,9 @@ Flathub submission, homepage URL once published.
 * Polish: toasts inside open dialogs, Copy Link / Remove Link / Properties in the file list,
   finished downloads open from the Transfers view.
 
-### M8 — Two-way sync around the mount (done 2026-10-03)
+### M8 — Two-way sync around the mount (done)
 
-Owner decision 2026-10-03: the product is built around the FUSE mount first; the GTK app comes
+Owner decision: the product is built around the FUSE mount first; the GTK app comes
 second. `internal/fusefs` became a sync engine:
 
 * **Journal** (`pending.go`): a closed write becomes a durable pending change
@@ -651,7 +651,7 @@ second. `internal/fusefs` became a sync engine:
   `.error`, `.status` (JSON on the root), `.sync`. `quark-mount status|sync|pin|unpin|evict|state`
   wrap them; the GNOME Files extension (`data/nautilus/quark-drive.py`, nautilus-python) adds
   "Keep on This Device" / "Free Up Space" / "Sync Now" and emblems (`data/icons/emblems`).
-* Responsiveness (fix after Files froze on 2026-10-03): listings and metadata have their own CLI
+* Responsiveness (fix after Files froze): listings and metadata have their own CLI
   limit (2) separate from downloads (2) and writes (1), so a file manager's path lookups never
   queue behind transfers; Lookup/Getattr answer from the last listing (memory or saved on disk)
   and refresh in the background, Readdir and changes wait for a fresh listing, Open re-checks the
@@ -683,7 +683,7 @@ pinning; sync folder (watch + upload) if the owner wants it.
 | R5 | Interactive prompts hang a process | Always explicit strategies, `Setsid`, timeouts, kill path, hang test in fake CLI. |
 | R6 | Latency of spawning per operation | 0.11 s measured; acceptable. REPL mode is a later optimisation only. |
 | R7 | CLI default log level DEBUG fills `~/.local/state/proton-drive-cli/proton-drive.log` | Spawn with `PROTON_DRIVE_LOG_LEVEL=WARNING`; expose in preferences. |
-| R8 | Concurrent processes share SQLite caches and `events.lock` | Write semaphore of 1; read cap 2 + transfers 2. Observed 2026-10-03: a CLI process starting while another closes dies at startup with `SQLITE_BUSY_RECOVERY: database is locked` (before any work); `pdcli.Client.run` retries such startups up to 4 times (150 ms steps). The lock is advisory (only affects event listening). |
+| R8 | Concurrent processes share SQLite caches and `events.lock` | Write semaphore of 1; read cap 2 + transfers 2. Observed: a CLI process starting while another closes dies at startup with `SQLITE_BUSY_RECOVERY: database is locked` (before any work); `pdcli.Client.run` retries such startups up to 4 times (150 ms steps). The lock is advisory (only affects event listening). |
 | R9 | Redistribution/licence of the CLI binary unclear | Do not bundle (D2); first-run onboarding points to proton.me; ask the owner before bundling. |
 | R10 | gotk4 memory leaks/crashes in rarely used APIs | Stay on mainstream widgets; UI tests with `G_DEBUG=fatal-criticals`; soak test RSS plateau. |
 | R11 | cgo build time and CI RAM | Build cache in CI, `-trimpath`, avoid rebuilding bindings. |

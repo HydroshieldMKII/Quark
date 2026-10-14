@@ -48,7 +48,7 @@ test strategy, methodology (GitHub Spec Kit) and milestones to follow.
 - Folder mount: `make install-mount` builds `~/.local/bin/quark-mount` (host only), installs the
   user unit and the GNOME Files extension (`data/nautilus/`, tests via `make test-nautilus`).
   FUSE tests run as part of `make test` and skip without /dev/fuse; `make e2e` includes a
-  sandboxed real mount. Since 2026-10-03 the mount is the priority over the GTK app: local
+  sandboxed real mount. The mount is the priority over the GTK app: local
   changes are journaled (`<cache>/pending`) and uploaded with retries and conflict copies, pins
   (`<cache>/pins.json`) are kept on device by a background pass, state and controls are
   extended attributes (`internal/fusefs/xattr.go`).
