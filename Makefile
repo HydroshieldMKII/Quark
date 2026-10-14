@@ -21,17 +21,22 @@ IN_SDK    := build/sdk-run.sh
 endif
 CORE_DIRS := $(shell $(GO) list -f '{{.Dir}}' $(CORE_PKGS) 2>/dev/null | sed "s|$$(pwd)/|./|")
 
-.PHONY: i18n install-mount install-user uninstall-user all build run test test-core test-ui cover lint fmt vuln fuzz soak fixtures e2e flatpak clean deps-check
+.PHONY: help check i18n install-mount install-user uninstall-user all build run test test-core test-ui cover lint fmt vuln fuzz soak fixtures e2e flatpak clean deps-check
 
-all: lint test
+all: check
 
-build:
+help: ## List the targets
+	@awk -F':.*## ' '/^[a-zA-Z0-9_-]+:.*## /{printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+check: lint test ## Lint + core tests with coverage gates (run before finishing; add test-ui for UI changes)
+
+build: ## Build bin/quark
 	$(IN_SDK) $(GO) build $(GOFLAGS_BUILD) -o $(BIN) ./cmd/quark
 
-run: build
+run: build ## Build and run with -v
 	./$(BIN) -v
 
-test: test-core test-nautilus
+test: test-core test-nautilus ## Core tests (race, coverage gates) + Files extension
 
 test-core:
 	$(GO) test -race -count=1 -shuffle=on -coverprofile=coverage.out $(CORE_PKGS)
@@ -41,47 +46,47 @@ test-core:
 
 # UI smoke tests: compiled (in the SDK if needed), then run on the host under
 # a headless Wayland compositor (needs mutter and dbus-run-session).
-test-ui:
+test-ui: ## UI smoke tests under headless mutter
 	# -race implies checkptr, which a gotk4 dependency (KarpelesLab/weak) trips
 	# by design; keep the race detector and disable only checkptr.
 	$(IN_SDK) $(GO) test -c -race -gcflags=all=-d=checkptr=0 -trimpath -tags uitest -o bin/ui.test ./internal/ui
 	G_DEBUG=fatal-criticals dbus-run-session -- mutter --headless --wayland --no-x11 \
 		--virtual-monitor 1280x800 -- ./bin/ui.test -test.count=1 -test.v
 
-cover: test-core
+cover: test-core ## HTML coverage report
 	$(GO) tool cover -html=coverage.out -o coverage.html
 
-lint:
+lint: ## golangci-lint on core and UI packages
 	golangci-lint run $(CORE_DIRS)
 	$(IN_SDK) golangci-lint run $(UI_PKGS)
 
-fmt:
+fmt: ## Format with gofumpt
 	gofumpt -w .
 
-vuln:
+vuln: ## govulncheck
 	$(IN_SDK) govulncheck ./...
 
 FUZZTIME ?= 30s
-fuzz:
+fuzz: ## Fuzz the CLI parsers (FUZZTIME=30s)
 	@for f in $$($(GO) test -list '^Fuzz' ./internal/pdcli/ | command grep '^Fuzz'); do \
 		echo "== $$f"; $(GO) test -run '^$$' -fuzz "^$$f$$" -fuzztime $(FUZZTIME) ./internal/pdcli/ || exit 1; \
 	done
 
 SOAKTIME ?= 30m
-soak:
+soak: ## Long soak test
 	QUARK_SOAK=$(SOAKTIME) $(GO) test -race -count=1 -run Soak -timeout 2h ./internal/jobs/...
 
 # Talks to the REAL account, inside a sandbox folder only (see constitution, Principle I).
-fixtures:
+fixtures: ## Record sanitised CLI fixtures from a real account (asks first)
 	$(GO) run ./tools/capture-fixtures
 
-e2e:
+e2e: ## Round trip against the real CLI (opt-in)
 	QUARK_E2E=1 $(GO) test -count=1 -v -timeout 30m ./e2e/...
 
 # Builds and installs the Flatpak for the current user. Uses flatpak-builder
 # from the host if present, else the org.flatpak.Builder Flatpak (no sudo).
 FLATPAK_BUILDER ?= $(shell command -v flatpak-builder 2>/dev/null || echo flatpak run --no-documents-portal org.flatpak.Builder)
-flatpak:
+flatpak: ## Build and install the per-user Flatpak
 	$(FLATPAK_BUILDER) --user --install --force-clean --install-deps-from=flathub \
 		build-dir build/flatpak/$(APP_ID).yml
 	@if ! mountpoint -q "$${XDG_RUNTIME_DIR:-/run/user/$$(id -u)}/doc"; then \
@@ -89,14 +94,14 @@ flatpak:
 		echo "         'bwrap: Can't find source path .../doc/by-app/...'. Fix with:"; \
 		echo "         systemctl --user restart xdg-document-portal"; fi
 
-clean:
+clean: ## Remove build output
 	rm -rf bin coverage.out coverage.html build-dir .flatpak-builder
 
 # Installs Quark for the current user: binary, icons and launcher entry, so it
 # shows in the app grid and can be pinned to the dash.
 USER_PREFIX := $(HOME)/.local
 ICONS       := $(USER_PREFIX)/share/icons/hicolor
-install-user: build
+install-user: build ## Install without Flatpak (development)
 	install -Dm755 $(BIN) $(USER_PREFIX)/bin/quark
 	install -Dm644 data/icons/hicolor/scalable/apps/$(APP_ID).svg $(ICONS)/scalable/apps/$(APP_ID).svg
 	install -Dm644 data/icons/hicolor/symbolic/apps/$(APP_ID)-symbolic.svg $(ICONS)/symbolic/apps/$(APP_ID)-symbolic.svg
@@ -107,7 +112,7 @@ install-user: build
 	-gtk-update-icon-cache -q -f -t $(ICONS)
 
 # Installs the host-side mount tool (FUSE cannot run inside the Flatpak).
-install-mount:
+install-mount: ## Install quark-mount, its user unit and the Files extension
 	$(GO) build $(GOFLAGS_BUILD) -ldflags "-X main.version=$(VERSION)" -o bin/quark-mount ./cmd/quark-mount
 	install -Dm755 bin/quark-mount $(USER_PREFIX)/bin/quark-mount
 	install -Dm644 data/quark-mount.service $${XDG_CONFIG_HOME:-$$HOME/.config}/systemd/user/quark-mount.service
@@ -129,5 +134,5 @@ uninstall-user:
 	-update-desktop-database -q $(USER_PREFIX)/share/applications
 
 # Regenerates the translation template after strings change.
-i18n:
+i18n: ## Refresh translation templates
 	$(GO) run ./tools/i18n-extract

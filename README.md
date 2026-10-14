@@ -114,14 +114,18 @@ data/                 desktop file, AppStream metadata, icons, GNOME Files exten
 build/                Flatpak manifest, headless test and SDK helper scripts
 e2e/                  end-to-end tests against a real account (opt-in)
 tools/                fixture capture, coverage gate, string extraction
-docs/PLAN.md          verified CLI facts, decisions, architecture, test strategy
+docs/ARCHITECTURE.md  one-page map: packages, rules, where to change what
+docs/PLAN.md          long design record: verified CLI facts, decisions, milestone history
+AGENTS.md             rules for coding agents and contributors (nested ones per package)
 ```
 
 ## Development
 
 ```bash
 git config core.hooksPath .githooks   # once per clone
-make test        # core tests: race detector, coverage gates, Files extension
+make help        # list every target
+make check       # lint + core tests (race detector, coverage gates): run before a PR
+make test        # core tests only, plus the Files extension
 make lint        # golangci-lint
 make test-ui     # UI smoke tests under a headless mutter
 make fuzz        # fuzz the CLI parsers
@@ -129,7 +133,7 @@ make i18n        # refresh translation templates after marking strings
 ```
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request, and
-[`CLAUDE.md`](CLAUDE.md) for the stability invariants and import rules the code base enforces.
+[`AGENTS.md`](AGENTS.md) for the stability invariants and import rules the code base enforces.
 Real-account targets (`make fixtures`, `make e2e`) ask before touching anything and run in a
 sandboxed folder.
 

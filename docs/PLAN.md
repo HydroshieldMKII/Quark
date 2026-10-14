@@ -1,5 +1,9 @@
 # Quark — a GNOME client for Proton Drive (implementation plan)
 
+> **Design record.** Parts of this file describe the plan as it was written; the milestone
+> status in section 8 is history. For the current shape of the code read
+> [`ARCHITECTURE.md`](ARCHITECTURE.md), and for the rules `../AGENTS.md`.
+
 Status: plan v1. Audience: the implementing agent (Claude Opus) and the
 project owner. Everything in section 1 was verified on this machine; everything else is a decision
 or an instruction. Do not re-derive section 1, build on it.
@@ -454,7 +458,7 @@ bodyclose, noctx, nilerr, unparam, unused, misspell, gofumpt, depguard (rules in
 forbidigo` (forbid `fmt.Print*`, `time.Sleep` outside tests, `os.Exit` outside `main`, `panic(`
 outside `must*` constructors in `ui`).
 
-### 6.7 Stability invariants (the constitution, repeated in `CLAUDE.md`)
+### 6.7 Stability invariants (the constitution, repeated in `AGENTS.md`)
 
 1. Widgets are touched only on the GTK main thread, through `RunTask`/`Dispatch`.
 2. Every subprocess has a context, a process group, a kill path and is tracked in the ProcessTable.
@@ -520,7 +524,7 @@ wide/narrow) attached to the PR, and the gate checklist ticked.
 3. Hello window: `adw.Application` + `adw.ApplicationWindow` + `adw.StatusPage`; confirm it runs on
    Wayland (`GDK_BACKEND=wayland`) and under headless mutter.
 4. Repo skeleton from §4.1, `Makefile` targets: `build run test test-ui lint fuzz soak fixtures e2e
-   flatpak`, `.golangci.yml`, GitHub Actions, `CLAUDE.md` (build/test commands + §6.7), `LICENSE`.
+   flatpak`, `.golangci.yml`, GitHub Actions, `AGENTS.md` (build/test commands + §6.7), `LICENSE`.
 5. Copy the CLI: `install -m755 ~/Downloads/proton-drive ~/.local/bin/proton-drive`.
 6. **Owner action:** run `proton-drive auth login` once. Then run `make fixtures` (§6.3).
    Gate: fixtures for every command committed; unknowns in §1.7 resolved and written into
@@ -707,7 +711,7 @@ pinning; sync folder (watch + upload) if the owner wants it.
 
 > Read `docs/PLAN.md` fully. Section 1 is verified fact; do not re-probe the CLI except via
 > `tools/capture-fixtures`. Follow §3 decisions and §4 architecture exactly; §6.7 invariants are
-> non-negotiable and go into `CLAUDE.md`. Set up Spec Kit as in §7, write the constitution, then
+> non-negotiable and go into `AGENTS.md`. Set up Spec Kit as in §7, write the constitution, then
 > deliver milestones M0→M6 in order, one PR each, with the gates in §8. Never touch widgets off the
 > main thread, never let a subprocess outlive its context, never let CLI output crash the app.
 > When the CLI's real JSON differs from assumptions, update fixtures and parsers, not the UI. Report
