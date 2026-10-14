@@ -1,7 +1,7 @@
 # Contributing to Quark
 
-Read `docs/ARCHITECTURE.md` first. `AGENTS.md` lists the stability invariants and import rules.
-`docs/PLAN.md` is the design record.
+Read `docs/ARCHITECTURE.md` first. `AGENTS.md` lists the stability invariants and import rules;
+`docs/TESTING.md` describes the test layers.
 
 ## Setup
 

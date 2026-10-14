@@ -31,7 +31,7 @@ Requires Linux with GNOME 50 and the `proton-drive` CLI (`proton-drive auth logi
 
 ## Documentation
 
-[Mount](docs/MOUNT.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Architecture](docs/ARCHITECTURE.md) · [Contributing](CONTRIBUTING.md) · [Releasing](docs/RELEASING.md) · [Security](SECURITY.md)
+[Mount](docs/MOUNT.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Architecture](docs/ARCHITECTURE.md) · [Decisions](docs/DECISIONS.md) · [Testing](docs/TESTING.md) · [Contributing](CONTRIBUTING.md) · [Releasing](docs/RELEASING.md) · [Security](SECURITY.md)
 
 ## License
 
