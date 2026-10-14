@@ -1,0 +1,63 @@
+name: release
+# Pushing a tag such as v0.1.0 publishes a GitHub release with the quark-mount binary.
+# Tags matching v* are protected by the "Release tags" ruleset (no deletion or moving).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release and upload its files
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Only release commits that are on main
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "tag is not on main"; exit 1; }
+      - name: Build quark-mount (pure Go, no GTK needed)
+        env:
+          TAG: ${{ github.ref_name }}
+          CGO_ENABLED: "0"
+        run: |
+          version="${TAG#v}"
+          mkdir -p dist
+          for arch in amd64 arm64; do
+            name="quark-mount-$TAG-linux-$arch"
+            dir="dist/$name"
+            mkdir -p "$dir"
+            GOOS=linux GOARCH=$arch go build -trimpath -ldflags "-s -w -X main.version=$version" \
+              -o "$dir/quark-mount" ./cmd/quark-mount
+            cp data/quark-mount.service LICENSE "$dir/"
+            cp data/nautilus/quark-drive.py "$dir/"
+            cp -r data/icons/emblems "$dir/emblems"
+            cat > "$dir/INSTALL.txt" <<'TXT'
+          Requires fuse3 and the official proton-drive CLI (signed in with `proton-drive auth login`).
+
+            install -Dm755 quark-mount ~/.local/bin/quark-mount
+            install -Dm644 quark-mount.service ~/.config/systemd/user/quark-mount.service
+            systemctl --user daemon-reload && systemctl --user enable --now quark-mount
+
+          Optional, for GNOME Files (needs nautilus-python):
+            install -Dm644 quark-drive.py ~/.local/share/nautilus-python/extensions/quark-drive.py
+            for f in emblems/*.svg; do install -Dm644 "$f" ~/.local/share/icons/hicolor/scalable/emblems/$(basename "$f"); done
+            nautilus -q
+          TXT
+            tar -C dist -czf "dist/$name.tar.gz" "$name"
+          done
+          (cd dist && sha256sum ./*.tar.gz > SHA256SUMS)
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          flags=""
+          case "$TAG" in *-*) flags="--prerelease" ;; esac
+          gh release create "$TAG" dist/*.tar.gz dist/SHA256SUMS \
+            --title "Quark $TAG" --generate-notes --verify-tag $flags
