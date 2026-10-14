@@ -8,10 +8,13 @@ on:
 jobs:
   core:
     runs-on: ubuntu-latest
-    container: fedora:44
+    container:
+      image: fedora:44
+      # The FUSE tests need /dev/fuse; without it they skip and the fusefs coverage gate fails.
+      options: --device /dev/fuse --cap-add SYS_ADMIN --security-opt apparmor:unconfined
     steps:
       - uses: actions/checkout@v4
-      - run: dnf -y install golang gcc git make
+      - run: dnf -y install golang gcc git make dbus-daemon fuse3 python3
       - uses: actions/cache@v4
         with:
           path: |
