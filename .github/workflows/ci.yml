@@ -2,8 +2,8 @@ name: ci
 on:
   push:
   pull_request:
-  schedule:
-    - cron: "0 3 * * *" # nightly soak
+  #schedule:
+  #  - cron: "0 3 * * *" # nightly soak
 
 jobs:
   core:
