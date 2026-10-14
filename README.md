@@ -10,6 +10,10 @@ never stores your credentials or your password.
 
 Quark is not affiliated with or endorsed by Proton AG.
 
+![Quark showing sample data in demo mode](docs/screenshots/files.png)
+
+*Demo mode (`quark --demo`): sample data, no account needed.*
+
 ## Features
 
 - **GNOME app**: browse My files, items shared with you, your computers and the trash; upload by
