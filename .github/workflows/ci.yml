@@ -21,7 +21,7 @@ jobs:
     outputs:
       code: ${{ steps.filter.outputs.code }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
       - id: filter
@@ -50,9 +50,9 @@ jobs:
       # The FUSE tests need /dev/fuse; without it they skip and the fusefs coverage gate fails.
       options: --device /dev/fuse --cap-add SYS_ADMIN --security-opt apparmor:unconfined
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: dnf -y install golang gcc git make dbus-daemon fuse3 python3
-      - uses: actions/cache@v4
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cache/go-build
@@ -69,9 +69,9 @@ jobs:
     timeout-minutes: 60 # the first run compiles gotk4 cold (~20 min); later runs reuse the cache
     container: fedora:44
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: dnf -y install golang gcc git make gtk4-devel libadwaita-devel gobject-introspection-devel mutter dbus-daemon
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cache/go-build
@@ -89,7 +89,7 @@ jobs:
       # Needs the GTK packages, so it runs here and not in the core job.
       - run: PATH=$PATH:$HOME/go/bin make vuln
       # Save even when a step fails, so a timeout does not throw the compiled gotk4 away.
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         if: always()
         with:
           path: |
@@ -102,6 +102,6 @@ jobs:
     runs-on: ubuntu-latest
     container: fedora:44
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: dnf -y install golang gcc git make
       - run: make soak SOAKTIME=30m
