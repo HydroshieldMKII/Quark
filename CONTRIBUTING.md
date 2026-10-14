@@ -1,7 +1,7 @@
 # Contributing to Quark
 
-Thanks for helping. Read `docs/PLAN.md` first: section 1 is verified fact about the CLI, sections
-3–8 hold the decisions, architecture and test strategy. `CLAUDE.md` lists the stability invariants
+Thanks for helping. Read `docs/ARCHITECTURE.md` first (one page). `docs/PLAN.md` is the long design record: section 1 is
+verified fact about the CLI. `AGENTS.md` lists the stability invariants
 and import rules, which apply to human contributors too.
 
 ## Setup
@@ -30,4 +30,7 @@ uses automatically. See the README for the full list.
 
 ## Layout
 
-See "Project layout" in the README.
+See "Project layout" in the README. `.claude/skills/` and `.specify/` hold the Spec Kit
+workflow used for feature work; `AGENTS.md` (root and per package) is what coding agents follow.
+
+CI skips the build and test jobs for documentation-only changes (`*.md`, `docs/`, templates).
