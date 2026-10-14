@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+
+	"example.org/quark/internal/fsutil"
 )
 
 func writeFile(t *testing.T, path string, mode os.FileMode) {
@@ -87,7 +89,7 @@ func TestCheckBinary(t *testing.T) {
 		t.Errorf("missing file: %v", err)
 	}
 	f := filepath.Join(dir, "f")
-	writeFile(t, f, 0o600)
+	writeFile(t, f, fsutil.FilePrivate)
 	if err := CheckBinary(f); !errors.Is(err, ErrNotExecutable) {
 		t.Errorf("non-executable: %v", err)
 	}

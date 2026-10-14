@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"example.org/quark/internal/drive"
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/fusefs"
 	"example.org/quark/internal/pdcli"
 )
@@ -30,7 +31,7 @@ func TestMountRoundTrip(t *testing.T) {
 	}
 	s := newSandbox(t)
 	mnt := filepath.Join(t.TempDir(), "mnt")
-	if err := os.Mkdir(mnt, 0o700); err != nil {
+	if err := os.Mkdir(mnt, fsutil.DirPrivate); err != nil {
 		t.Fatal(err)
 	}
 	m, err := fusefs.Mount(mnt, fusefs.Options{
@@ -50,7 +51,7 @@ func TestMountRoundTrip(t *testing.T) {
 
 	// Write a file, read it back through the mount and through the CLI.
 	content := bytes.Repeat([]byte("quark mount e2e\n"), 2000)
-	if err := os.WriteFile(filepath.Join(mnt, "notes [1].txt"), content, 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(mnt, "notes [1].txt"), content, fsutil.FilePrivate); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 	if b, err := os.ReadFile(filepath.Join(mnt, "notes [1].txt")); err != nil || !bytes.Equal(b, content) {
@@ -86,7 +87,7 @@ func TestMountRoundTrip(t *testing.T) {
 	}
 
 	// Folders, rename, move, modify, remove.
-	if err := os.Mkdir(filepath.Join(mnt, "sub"), 0o700); err != nil {
+	if err := os.Mkdir(filepath.Join(mnt, "sub"), fsutil.DirPrivate); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	if err := os.Rename(filepath.Join(mnt, "notes [1].txt"), filepath.Join(mnt, "sub", "renamed.txt")); err != nil {
@@ -104,7 +105,7 @@ func TestMountRoundTrip(t *testing.T) {
 	}
 	// A fresh download through the CLI must show the appended content.
 	dl := filepath.Join(s.local, "dl")
-	if err := os.MkdirAll(dl, 0o700); err != nil {
+	if err := os.MkdirAll(dl, fsutil.DirPrivate); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := s.client.Download(context.Background(), pdcli.DownloadSpec{

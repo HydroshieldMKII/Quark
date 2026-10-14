@@ -593,7 +593,7 @@ func (q *Queue) persist() {
 		q.log.Error("encoding transfer queue", "err", err)
 		return
 	}
-	if err := fsutil.WriteFileAtomic(q.cfg.StatePath, data, 0o600); err != nil {
+	if err := fsutil.WriteFileAtomic(q.cfg.StatePath, data, fsutil.FilePrivate); err != nil {
 		q.log.Error("saving transfer queue", "err", err)
 	}
 }

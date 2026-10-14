@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"example.org/quark/internal/fsutil"
 )
 
 func TestRedactString(t *testing.T) {
@@ -147,7 +149,7 @@ func TestNewWritesRedactedJSON(t *testing.T) {
 
 func TestNewFallsBackToStderr(t *testing.T) {
 	file := filepath.Join(t.TempDir(), "file")
-	if err := os.WriteFile(file, nil, 0o600); err != nil {
+	if err := os.WriteFile(file, nil, fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	// Dir is a regular file: opening the log fails, but a usable logger is returned.

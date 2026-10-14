@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"example.org/quark/internal/fsutil"
 )
 
 // Options configures New.
@@ -252,7 +254,7 @@ var _ io.WriteCloser = (*RotatingWriter)(nil)
 
 // NewRotatingWriter opens (or creates) path for appending.
 func NewRotatingWriter(path string, maxSize int64, maxFiles int) (*RotatingWriter, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), fsutil.DirPrivate); err != nil {
 		return nil, err
 	}
 	w := &RotatingWriter{path: path, maxSize: maxSize, maxFiles: maxFiles}
@@ -263,7 +265,7 @@ func NewRotatingWriter(path string, maxSize int64, maxFiles int) (*RotatingWrite
 }
 
 func (w *RotatingWriter) open() error {
-	f, err := os.OpenFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	f, err := os.OpenFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, fsutil.FilePrivate)
 	if err != nil {
 		return err
 	}

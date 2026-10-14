@@ -58,7 +58,7 @@ func (s *pinStore) save() error {
 	if err != nil {
 		return err
 	}
-	return fsutil.WriteFileAtomic(s.path, data, 0o600)
+	return fsutil.WriteFileAtomic(s.path, data, fsutil.FilePrivate)
 }
 
 func (s *pinStore) set(p pin) error {

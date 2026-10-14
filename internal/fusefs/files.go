@@ -11,6 +11,7 @@ import (
 	"github.com/hanwen/go-fuse/v2/fuse"
 
 	"example.org/quark/internal/drive"
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/pdcli"
 )
 
@@ -122,7 +123,7 @@ func (n *node) openWrite(ctx context.Context, attr drive.Node, truncate bool) (*
 			return nil, syscall.EIO
 		}
 	}
-	f, err := os.OpenFile(target, os.O_RDWR|os.O_CREATE, 0o600) //nolint:gosec // our staging dir
+	f, err := os.OpenFile(target, os.O_RDWR|os.O_CREATE, fsutil.FilePrivate) //nolint:gosec // our staging dir
 	if err != nil {
 		_ = os.RemoveAll(stage)
 		return nil, syscall.EIO
@@ -145,7 +146,7 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	defer func() { _ = in.Close() }()
-	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600) //nolint:gosec // staging path
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, fsutil.FilePrivate) //nolint:gosec // staging path
 	if err != nil {
 		return err
 	}
@@ -173,7 +174,7 @@ func (n *node) Create(ctx context.Context, name string, _ uint32, _ uint32, out 
 		return nil, nil, 0, syscall.EIO
 	}
 	target := filepath.Join(stage, name)
-	if err := os.WriteFile(target, nil, 0o600); err != nil {
+	if err := os.WriteFile(target, nil, fsutil.FilePrivate); err != nil {
 		_ = os.RemoveAll(stage)
 		return nil, nil, 0, syscall.EIO
 	}
@@ -197,7 +198,7 @@ func (n *node) Create(ctx context.Context, name string, _ uint32, _ uint32, out 
 	}
 	inode := n.child(ctx, c)
 	cn := inode.Operations().(*node)
-	f, err := os.OpenFile(target, os.O_RDWR, 0o600) //nolint:gosec // staging path
+	f, err := os.OpenFile(target, os.O_RDWR, fsutil.FilePrivate) //nolint:gosec // staging path
 	if err != nil {
 		_ = os.RemoveAll(stage)
 		return nil, nil, 0, syscall.EIO

@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"example.org/quark/internal/drive"
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/pdcli"
 )
 
@@ -548,7 +549,7 @@ func (d *Drive) Download(ctx context.Context, s pdcli.DownloadSpec) (drive.Trans
 				_ = os.Remove(target)
 			}
 		}
-		if werr := os.WriteFile(target, e.content, 0o600); werr != nil {
+		if werr := os.WriteFile(target, e.content, fsutil.FilePrivate); werr != nil {
 			sum.FailedItems++
 			sum.Failures = append(sum.Failures, drive.TransferFailure{Name: e.node.Name, Error: werr.Error()})
 			continue

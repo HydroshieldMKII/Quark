@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"example.org/quark/internal/drive"
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/pdcli"
 	"example.org/quark/internal/settings"
 )
@@ -64,7 +65,7 @@ func TestListCacheIgnoresCorruptAndOldFiles(t *testing.T) {
 	dir := t.TempDir()
 	c := newListCache(time.Now, time.Minute)
 	bad := filepath.Join(dir, "bad.json")
-	if err := os.WriteFile(bad, []byte("{nope"), 0o600); err != nil {
+	if err := os.WriteFile(bad, []byte("{nope"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	c.load(bad)

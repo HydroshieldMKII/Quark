@@ -17,6 +17,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"example.org/quark/internal/fsutil"
 )
 
 // Environment variables understood by the fake.
@@ -208,7 +210,7 @@ func writeRecord(dir string, rec Record) {
 	}
 	b, _ := json.Marshal(rec)
 	name := filepath.Join(dir, time.Now().Format("150405.000000000")+"-"+itoa(rec.Pid)+".json")
-	_ = os.WriteFile(name, b, 0o600)
+	_ = os.WriteFile(name, b, fsutil.FilePrivate)
 }
 
 func itoa(i int) string {
@@ -224,7 +226,7 @@ func Setup(t testing.TB, sc Scenario) (binary string, env map[string]string) {
 	if sc.RecordDir == "" {
 		sc.RecordDir = filepath.Join(dir, "records")
 	}
-	if err := os.MkdirAll(sc.RecordDir, 0o700); err != nil {
+	if err := os.MkdirAll(sc.RecordDir, fsutil.DirPrivate); err != nil {
 		t.Fatal(err)
 	}
 	data, err := json.Marshal(sc)
@@ -232,7 +234,7 @@ func Setup(t testing.TB, sc Scenario) (binary string, env map[string]string) {
 		t.Fatal(err)
 	}
 	path := filepath.Join(dir, "scenario.json")
-	if err := os.WriteFile(path, data, 0o600); err != nil {
+	if err := os.WriteFile(path, data, fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	exe, err := os.Executable()
@@ -241,7 +243,7 @@ func Setup(t testing.TB, sc Scenario) (binary string, env map[string]string) {
 	}
 	// A coverage-instrumented test binary warns on stderr at exit unless GOCOVERDIR is set.
 	cover := filepath.Join(dir, "cover")
-	if err := os.MkdirAll(cover, 0o700); err != nil {
+	if err := os.MkdirAll(cover, fsutil.DirPrivate); err != nil {
 		t.Fatal(err)
 	}
 	return exe, map[string]string{EnvActive: "1", EnvScenario: path, "QUARK_FAKE_RECORDS": sc.RecordDir, "GOCOVERDIR": cover}

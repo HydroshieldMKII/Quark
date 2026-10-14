@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"example.org/quark/internal/drive"
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/pdcli"
 )
 
@@ -87,13 +88,13 @@ func TestAwkwardNamesRoundTrip(t *testing.T) {
 	s := newSandbox(t)
 	ctx := context.Background()
 	src := filepath.Join(s.local, "src [dir]")
-	if err := os.MkdirAll(src, 0o700); err != nil {
+	if err := os.MkdirAll(src, fsutil.DirPrivate); err != nil {
 		t.Fatal(err)
 	}
 	for i, name := range awkwardNames {
 		content := []byte("Quark e2e file " + name + string(rune('A'+i)))
 		p := filepath.Join(src, name)
-		if err := os.WriteFile(p, content, 0o600); err != nil {
+		if err := os.WriteFile(p, content, fsutil.FilePrivate); err != nil {
 			t.Fatal(err)
 		}
 		sum, err := s.client.Upload(ctx, pdcli.UploadSpec{
@@ -120,7 +121,7 @@ func TestAwkwardNamesRoundTrip(t *testing.T) {
 	}
 
 	dst := filepath.Join(s.local, "dl [here]*")
-	if err := os.MkdirAll(dst, 0o700); err != nil {
+	if err := os.MkdirAll(dst, fsutil.DirPrivate); err != nil {
 		t.Fatal(err)
 	}
 	for _, n := range nodes {

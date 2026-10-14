@@ -14,6 +14,7 @@ import (
 	"go.uber.org/goleak"
 
 	"example.org/quark/internal/drive"
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/pdcli"
 )
 
@@ -314,7 +315,7 @@ func TestSingleFileDownloadProgressAndCleanup(t *testing.T) {
 	target := filepath.Join(dir, "movie.mkv")
 	id := f.q.Add(Transfer{Kind: Download, Name: "movie.mkv", Size: 100, Local: dir, Remote: "/my-files/m", FileStrategy: "rename", FolderStrategy: "merge"})
 	c := f.next()
-	if err := os.WriteFile(target, make([]byte, 40), 0o600); err != nil {
+	if err := os.WriteFile(target, make([]byte, 40), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(5 * time.Second)
@@ -342,7 +343,7 @@ func TestSingleFileDownloadProgressAndCleanup(t *testing.T) {
 	f.now = f.now.Add(time.Hour)
 	f.q.pump()
 	c = f.next()
-	c.resp <- result{before: func() { _ = os.WriteFile(target, make([]byte, 100), 0o600) }}
+	c.resp <- result{before: func() { _ = os.WriteFile(target, make([]byte, 100), fsutil.FilePrivate) }}
 	tr := f.settle(id, Done)
 	if tr.PartialFile != "" {
 		t.Fatal("completed file still marked partial")
@@ -356,7 +357,7 @@ func TestExistingTargetIsNeverRemoved(t *testing.T) {
 	f := newFixture(t)
 	dir := t.TempDir()
 	target := filepath.Join(dir, "report.pdf")
-	if err := os.WriteFile(target, []byte("the user's own file"), 0o600); err != nil {
+	if err := os.WriteFile(target, []byte("the user's own file"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	id := f.q.Add(Transfer{Kind: Download, Name: "report.pdf", Local: dir, Remote: "/my-files/r", FileStrategy: "rename", FolderStrategy: "merge"})
@@ -449,7 +450,7 @@ func TestLoadCorruptAndMissing(t *testing.T) {
 	if err := f.q.Load(); err != nil { // missing file
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(f.state, []byte("{nope"), 0o600); err != nil {
+	if err := os.WriteFile(f.state, []byte("{nope"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	q := NewQueue(f.config())
@@ -469,7 +470,7 @@ func TestShutdownRemovesPartialFilesAndRequeues(t *testing.T) {
 	target := filepath.Join(dir, "big.iso")
 	id := f.q.Add(Transfer{Kind: Download, Name: "big.iso", Size: 1000, Local: dir, Remote: "/my-files/b", FileStrategy: "rename", FolderStrategy: "merge"})
 	f.next()
-	if err := os.WriteFile(target, make([]byte, 10), 0o600); err != nil {
+	if err := os.WriteFile(target, make([]byte, 10), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(5 * time.Second)
@@ -557,7 +558,7 @@ func TestProgressUsesTheCLILocalName(t *testing.T) {
 	target := filepath.Join(dir, "what_now_.mkv") // the CLI's local name for "what?now*.mkv"
 	id := f.q.Add(Transfer{Kind: Download, Name: "what?now*.mkv", Size: 10, Local: dir, Remote: "/my-files/x", FileStrategy: "rename", FolderStrategy: "merge"})
 	c := f.next()
-	if err := os.WriteFile(target, make([]byte, 5), 0o600); err != nil {
+	if err := os.WriteFile(target, make([]byte, 5), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(5 * time.Second)
@@ -580,7 +581,7 @@ func TestPauseRequeuesAndResumeRestarts(t *testing.T) {
 	other := f.q.Add(upload("x"))
 	c := f.next()
 	f.next() // both running
-	if err := os.WriteFile(target, make([]byte, 10), 0o600); err != nil {
+	if err := os.WriteFile(target, make([]byte, 10), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(5 * time.Second)

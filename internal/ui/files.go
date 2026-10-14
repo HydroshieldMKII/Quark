@@ -17,6 +17,7 @@ import (
 
 	"example.org/quark/internal/app"
 	"example.org/quark/internal/drive"
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/jobs"
 )
 
@@ -787,7 +788,7 @@ func (v *filesView) openFile(n drive.Node) {
 		return
 	}
 	dir := filepath.Join(cache, "quark", "open", strings.ReplaceAll(n.UID, "/", "_"))
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if err := os.MkdirAll(dir, fsutil.DirPrivate); err != nil {
 		v.w.toastText(Tf("Could not prepare the file: %s", err.Error()))
 		return
 	}
