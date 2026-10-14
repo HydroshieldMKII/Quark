@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/pdcli"
 )
 
@@ -103,7 +104,7 @@ func TestPinnedFolderFollowsRemoteChanges(t *testing.T) {
 	})
 	// A new remote version of a pinned file is fetched too.
 	tmp := filepath.Join(t.TempDir(), "report.pdf")
-	if err := os.WriteFile(tmp, []byte("v2"), 0o600); err != nil {
+	if err := os.WriteFile(tmp, []byte("v2"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.d.Upload(context.Background(), pdcli.UploadSpec{LocalPaths: []string{tmp}, Parent: "/my-files/" + docs, FileStrategy: pdcli.UploadFileNewRevision, FolderStrategy: pdcli.UploadFolderMerge}); err != nil {
@@ -137,13 +138,13 @@ func TestConflictMakesACopy(t *testing.T) {
 	// Edit offline.
 	names(t, f.mnt) // browsed while online
 	f.d.SetFail(offline())
-	if err := os.WriteFile(p, []byte("mine"), 0o600); err != nil {
+	if err := os.WriteFile(p, []byte("mine"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	f.d.SetFail(nil)
 	// Someone else changes the file meanwhile.
 	tmp := filepath.Join(t.TempDir(), "hello.txt")
-	if err := os.WriteFile(tmp, []byte("theirs"), 0o600); err != nil {
+	if err := os.WriteFile(tmp, []byte("theirs"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.d.Upload(context.Background(), pdcli.UploadSpec{LocalPaths: []string{tmp}, Parent: "/my-files", FileStrategy: pdcli.UploadFileNewRevision, FolderStrategy: pdcli.UploadFolderMerge}); err != nil {
@@ -182,15 +183,15 @@ func TestPendingChangeSurvivesRestart(t *testing.T) {
 	p := filepath.Join(f.mnt, "hello.txt")
 	names(t, f.mnt) // browsed while online
 	f.d.SetFail(offline())
-	if err := os.WriteFile(p, []byte("kept across restarts"), 0o600); err != nil {
+	if err := os.WriteFile(p, []byte("kept across restarts"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	// A corrupt journal entry is set aside, not trusted and not deleted.
 	bogus := filepath.Join(f.cache, "pending", "bogus")
-	if err := os.MkdirAll(bogus, 0o700); err != nil {
+	if err := os.MkdirAll(bogus, fsutil.DirPrivate); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(bogus, "meta.json"), []byte("{"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(bogus, "meta.json"), []byte("{"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	f.remount(t, Options{RetryBase: 50 * time.Millisecond})
@@ -221,7 +222,7 @@ func TestRemovingAPendingFileKeepsACopy(t *testing.T) {
 	p := filepath.Join(f.mnt, "hello.txt")
 	names(t, f.mnt) // browsed while online
 	f.d.SetFail(offline())
-	if err := os.WriteFile(p, []byte("unsaved work"), 0o600); err != nil {
+	if err := os.WriteFile(p, []byte("unsaved work"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	f.d.SetFail(nil)
@@ -296,7 +297,7 @@ func TestControlAttributes(t *testing.T) {
 	if b, err := os.ReadFile(weird); err != nil || string(b) != "odd" {
 		t.Fatalf("read sanitized name: %q, %v", b, err)
 	}
-	if err := os.WriteFile(weird, []byte("x"), 0o600); !errors.Is(err, syscall.EPERM) {
+	if err := os.WriteFile(weird, []byte("x"), fsutil.FilePrivate); !errors.Is(err, syscall.EPERM) {
 		t.Fatalf("writing a sanitized name: %v", err)
 	}
 }

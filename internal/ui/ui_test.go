@@ -23,6 +23,7 @@ import (
 	"example.org/quark/internal/app"
 	"example.org/quark/internal/app/demo"
 	"example.org/quark/internal/drive"
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/jobs"
 	"example.org/quark/internal/pdcli"
 	"example.org/quark/internal/settings"
@@ -255,7 +256,7 @@ func TestAllSectionsAndTransfers(t *testing.T) {
 func TestUploadShowsInTransfers(t *testing.T) {
 	dir := t.TempDir()
 	path := dir + "/upload-me.txt"
-	if err := os.WriteFile(path, []byte("hello"), 0o600); err != nil {
+	if err := os.WriteFile(path, []byte("hello"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	v := files(t, "my-files")

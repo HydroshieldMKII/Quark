@@ -54,7 +54,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.Mode().Perm() != 0o600 {
+	if st.Mode().Perm() != fsutil.FilePrivate {
 		t.Errorf("permissions = %v", st.Mode().Perm())
 	}
 	out, err := Load(path, now)
@@ -74,7 +74,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 
 func TestLoadPartialFileKeepsDefaults(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "settings.json")
-	if err := os.WriteFile(path, []byte(`{"maxTransfers": 4, "unknownField": true}`), 0o600); err != nil {
+	if err := os.WriteFile(path, []byte(`{"maxTransfers": 4, "unknownField": true}`), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	s, err := Load(path, now)
@@ -91,7 +91,7 @@ func TestLoadNormalizesInvalidValues(t *testing.T) {
 	bad := `{"uploadFileStrategy":"nuke","downloadFolderStrategy":"remove","maxTransfers":99,"cliLogLevel":"TRACE",
 	"window":{"width":5,"height":5},"cliPath":"relative/bin","downloadDir":"~/x","sortColumn":"color",
 	"columnWidths":{"name":2,"evil":100,"size":120},"version":7}`
-	if err := os.WriteFile(path, []byte(bad), 0o600); err != nil {
+	if err := os.WriteFile(path, []byte(bad), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	s, err := Load(path, now)
@@ -116,7 +116,7 @@ func TestLoadCorruptFileIsMovedAside(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "settings.json")
 	for _, content := range []string{`{"maxTransfers": `, `[]`, "\x00\x01", `{"maxTransfers":"two"}`} {
-		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		if err := os.WriteFile(path, []byte(content), fsutil.FilePrivate); err != nil {
 			t.Fatal(err)
 		}
 		s, err := Load(path, now)
@@ -143,7 +143,7 @@ func TestLoadCorruptFileIsMovedAside(t *testing.T) {
 
 func TestLoadRejectsHugeFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "settings.json")
-	if err := os.WriteFile(path, make([]byte, maxFileSize+1), 0o600); err != nil {
+	if err := os.WriteFile(path, make([]byte, maxFileSize+1), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := Load(path, now); !errors.Is(err, ErrRecovered) {
@@ -154,7 +154,7 @@ func TestLoadRejectsHugeFile(t *testing.T) {
 func TestLoadUnreadable(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "settings.json")
-	if err := os.Mkdir(path, 0o700); err != nil { // a directory where the file should be
+	if err := os.Mkdir(path, fsutil.DirPrivate); err != nil { // a directory where the file should be
 		t.Fatal(err)
 	}
 	s, err := Load(path, now)
@@ -165,10 +165,10 @@ func TestLoadUnreadable(t *testing.T) {
 
 func TestWriteFileAtomicReplacesExisting(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "f.json")
-	if err := fsutil.WriteFileAtomic(path, []byte("old"), 0o600); err != nil {
+	if err := fsutil.WriteFileAtomic(path, []byte("old"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
-	if err := fsutil.WriteFileAtomic(path, []byte("new"), 0o600); err != nil {
+	if err := fsutil.WriteFileAtomic(path, []byte("new"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	b, _ := os.ReadFile(path)
@@ -180,7 +180,7 @@ func TestWriteFileAtomicReplacesExisting(t *testing.T) {
 	if err := os.Mkdir(ro, 0o500); err != nil {
 		t.Fatal(err)
 	}
-	if err := fsutil.WriteFileAtomic(filepath.Join(ro, "x"), []byte("x"), 0o600); err == nil && os.Getuid() != 0 {
+	if err := fsutil.WriteFileAtomic(filepath.Join(ro, "x"), []byte("x"), fsutil.FilePrivate); err == nil && os.Getuid() != 0 {
 		t.Fatal("write into read-only dir succeeded")
 	}
 }

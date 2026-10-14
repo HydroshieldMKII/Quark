@@ -239,7 +239,7 @@ func (m *Mounted) saveListing(uid string, nodes []drive.Node) {
 		return
 	}
 	path := filepath.Join(m.opts.CacheDir, "listings", safeSegment(uid)+".json")
-	if err := fsutil.WriteFileAtomic(path, data, 0o600); err != nil {
+	if err := fsutil.WriteFileAtomic(path, data, fsutil.FilePrivate); err != nil {
 		m.log.Warn("saving listing", "err", err)
 	}
 }
@@ -551,10 +551,10 @@ func (n *node) fillAttr(out *fuse.Attr) {
 	n.seenRev = a.RevisionUID
 	out.Uid, out.Gid = n.m.uid, n.m.gid
 	if n.isDir() {
-		out.Mode = syscall.S_IFDIR | 0o700
+		out.Mode = syscall.S_IFDIR | uint32(fsutil.DirPrivate)
 		out.Nlink = 2
 	} else {
-		out.Mode = syscall.S_IFREG | 0o600
+		out.Mode = syscall.S_IFREG | uint32(fsutil.FilePrivate)
 		out.Nlink = 1
 		out.Size = uint64(max(a.Size, 0)) //nolint:gosec // non-negative
 		if p := n.m.pending.contentPath(a.UID); p != "" {

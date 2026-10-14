@@ -24,6 +24,7 @@ import (
 	"syscall"
 	"time"
 
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/pdcli"
 )
 
@@ -233,14 +234,14 @@ func writeLocalFiles(dir, tok string) error {
 	}
 	for name, content := range files {
 		p := filepath.Join(dir, name)
-		if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		if err := os.MkdirAll(filepath.Dir(p), fsutil.DirPrivate); err != nil {
 			return err
 		}
-		if err := os.WriteFile(p, []byte(content), 0o600); err != nil {
+		if err := os.WriteFile(p, []byte(content), fsutil.FilePrivate); err != nil {
 			return err
 		}
 	}
-	return os.MkdirAll(filepath.Join(dir, "out"), 0o700)
+	return os.MkdirAll(filepath.Join(dir, "out"), fsutil.DirPrivate)
 }
 
 // cleanup trashes the sandbox and deletes it permanently. It uses a fresh
@@ -297,10 +298,10 @@ func (r *recorder) do(ctx context.Context, s step) error {
 	fmt.Printf("  %-28s exit=%d %s %s\n", s.Name, s.Exit, s.Kind, status)
 
 	base := filepath.Join(r.dir, s.Name)
-	if werr := os.WriteFile(base+".stdout", r.san.Output(res.Stdout, s.Mode), 0o600); werr != nil {
+	if werr := os.WriteFile(base+".stdout", r.san.Output(res.Stdout, s.Mode), fsutil.FilePrivate); werr != nil {
 		return werr
 	}
-	if werr := os.WriteFile(base+".stderr", []byte(r.san.Text(string(res.Stderr))), 0o600); werr != nil {
+	if werr := os.WriteFile(base+".stderr", []byte(r.san.Text(string(res.Stderr))), fsutil.FilePrivate); werr != nil {
 		return werr
 	}
 	s.Args = sanitizeArgs(r.san, r.local, s.Args)
@@ -327,5 +328,5 @@ func (r *recorder) writeManifest(v pdcli.Version) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(r.dir, "manifest.json"), append(b, '\n'), 0o600)
+	return os.WriteFile(filepath.Join(r.dir, "manifest.json"), append(b, '\n'), fsutil.FilePrivate)
 }

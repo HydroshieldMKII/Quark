@@ -18,6 +18,7 @@ import (
 
 	"go.uber.org/goleak"
 
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/pdcli"
 	"example.org/quark/internal/testutil/memdrive"
 )
@@ -71,7 +72,7 @@ func mountFixture(t *testing.T, opts Options, seed func(f *fixture)) *fixture {
 	}
 	f.mnt = filepath.Join(t.TempDir(), "mnt")
 	f.cache = filepath.Join(t.TempDir(), "cache")
-	if err := os.Mkdir(f.mnt, 0o700); err != nil {
+	if err := os.Mkdir(f.mnt, fsutil.DirPrivate); err != nil {
 		t.Fatal(err)
 	}
 	opts.Backend = f.d
@@ -168,13 +169,13 @@ func TestListAndRead(t *testing.T) {
 		t.Fatalf("nested read: %d bytes, %v", len(b), err)
 	}
 	st, err := os.Stat(filepath.Join(f.mnt, "hello.txt"))
-	if err != nil || st.Size() != 13 || st.IsDir() || st.Mode().Perm() != 0o600 {
+	if err != nil || st.Size() != 13 || st.IsDir() || st.Mode().Perm() != fsutil.FilePrivate {
 		t.Fatalf("stat = %v, %v", st, err)
 	}
 	if !st.ModTime().Equal(f.now) {
 		t.Errorf("mtime = %v, want %v", st.ModTime(), f.now)
 	}
-	if st, err := os.Stat(filepath.Join(f.mnt, "Documents")); err != nil || !st.IsDir() || st.Mode().Perm() != 0o700 {
+	if st, err := os.Stat(filepath.Join(f.mnt, "Documents")); err != nil || !st.IsDir() || st.Mode().Perm() != fsutil.DirPrivate {
 		t.Fatalf("dir stat = %v, %v", st, err)
 	}
 	if _, err := os.Stat(filepath.Join(f.mnt, "nope")); !errors.Is(err, os.ErrNotExist) {
@@ -193,7 +194,7 @@ func TestListAndRead(t *testing.T) {
 func TestWriteNewAndModify(t *testing.T) {
 	f := mountFixture(t, Options{}, seedBasic)
 	p := filepath.Join(f.mnt, "new.txt")
-	if err := os.WriteFile(p, []byte("fresh content"), 0o600); err != nil {
+	if err := os.WriteFile(p, []byte("fresh content"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	n, ok := f.d.Find("", "new.txt")
@@ -231,7 +232,7 @@ func TestWriteNewAndModify(t *testing.T) {
 	}
 
 	// Truncate and rewrite in place.
-	if err := os.WriteFile(filepath.Join(f.mnt, "hello.txt"), []byte("short"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(f.mnt, "hello.txt"), []byte("short"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	if c, _ := f.d.Content(h.UID); string(c) != "short" {
@@ -272,7 +273,7 @@ func TestLargeFileAndPartialReads(t *testing.T) {
 		t.Fatalf("full read differs: %v", err)
 	}
 	out := filepath.Join(f.mnt, "copy.bin")
-	if err := os.WriteFile(out, big, 0o600); err != nil {
+	if err := os.WriteFile(out, big, fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	n, _ := f.d.Find("", "copy.bin")
@@ -285,13 +286,13 @@ func TestMkdirRenameMoveRemove(t *testing.T) {
 	f := mountFixture(t, Options{}, seedBasic)
 	docsNode, _ := f.d.Find("", "Documents")
 	docs := docsNode.UID
-	if err := os.Mkdir(filepath.Join(f.mnt, "Photos"), 0o700); err != nil {
+	if err := os.Mkdir(filepath.Join(f.mnt, "Photos"), fsutil.DirPrivate); err != nil {
 		t.Fatal(err)
 	}
 	if _, ok := f.d.Find("", "Photos"); !ok {
 		t.Fatal("folder not created")
 	}
-	if err := os.Mkdir(filepath.Join(f.mnt, "Photos"), 0o700); !errors.Is(err, os.ErrExist) {
+	if err := os.Mkdir(filepath.Join(f.mnt, "Photos"), fsutil.DirPrivate); !errors.Is(err, os.ErrExist) {
 		t.Fatalf("duplicate mkdir: %v", err)
 	}
 	// Rename in place.
@@ -315,7 +316,7 @@ func TestMkdirRenameMoveRemove(t *testing.T) {
 		t.Fatalf("read after move: %q, %v", b, err)
 	}
 	// Rename over an existing file: the old target goes to the trash (editor-style save).
-	if err := os.WriteFile(filepath.Join(f.mnt, "Documents", "report.pdf.tmp"), []byte("v2"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(f.mnt, "Documents", "report.pdf.tmp"), []byte("v2"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Rename(filepath.Join(f.mnt, "Documents", "report.pdf.tmp"), filepath.Join(f.mnt, "Documents", "report.pdf")); err != nil {
@@ -347,10 +348,10 @@ func TestMkdirRenameMoveRemove(t *testing.T) {
 
 func TestReadOnlyMount(t *testing.T) {
 	f := mountFixture(t, Options{ReadOnly: true}, seedBasic)
-	if err := os.WriteFile(filepath.Join(f.mnt, "x.txt"), []byte("x"), 0o600); !errors.Is(err, syscall.EROFS) {
+	if err := os.WriteFile(filepath.Join(f.mnt, "x.txt"), []byte("x"), fsutil.FilePrivate); !errors.Is(err, syscall.EROFS) {
 		t.Fatalf("create: %v", err)
 	}
-	if err := os.Mkdir(filepath.Join(f.mnt, "d"), 0o700); !errors.Is(err, syscall.EROFS) {
+	if err := os.Mkdir(filepath.Join(f.mnt, "d"), fsutil.DirPrivate); !errors.Is(err, syscall.EROFS) {
 		t.Fatalf("mkdir: %v", err)
 	}
 	if err := os.Remove(filepath.Join(f.mnt, "hello.txt")); !errors.Is(err, syscall.EROFS) {
@@ -406,7 +407,7 @@ func TestUploadFailureKeepsTheData(t *testing.T) {
 		t.Fatalf("status = %+v", st)
 	}
 	// Editing again while offline chains on the pending content.
-	if err := os.WriteFile(p, []byte("precious v2"), 0o600); err != nil {
+	if err := os.WriteFile(p, []byte("precious v2"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	// Back online: the retry uploads the latest content as a new version.
@@ -475,7 +476,7 @@ func TestListingRefreshesAfterTTL(t *testing.T) {
 	}
 	tmp := t.TempDir()
 	p := filepath.Join(tmp, "hello.txt")
-	if err := os.WriteFile(p, []byte("changed elsewhere"), 0o600); err != nil {
+	if err := os.WriteFile(p, []byte("changed elsewhere"), fsutil.FilePrivate); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.d.Upload(context.Background(), pdcli.UploadSpec{LocalPaths: []string{p}, Parent: "/my-files", FileStrategy: pdcli.UploadFileNewRevision, FolderStrategy: pdcli.UploadFolderMerge}); err != nil {
@@ -546,7 +547,7 @@ func TestConcurrentReadsAndWrites(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := os.WriteFile(filepath.Join(f.mnt, "w"+string(rune('0'+i))+".txt"), []byte(strings.Repeat("w", 50)), 0o600); err != nil {
+			if err := os.WriteFile(filepath.Join(f.mnt, "w"+string(rune('0'+i))+".txt"), []byte(strings.Repeat("w", 50)), fsutil.FilePrivate); err != nil {
 				errs <- err
 			}
 		}()

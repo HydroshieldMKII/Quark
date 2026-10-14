@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"example.org/quark/internal/drive"
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/pdcli"
 )
 
@@ -35,15 +36,15 @@ type contentCache struct {
 
 func newContentCache(dir string, limit int64, log *slog.Logger, keep func(uid string) bool) (*contentCache, error) {
 	for _, sub := range []string{"files", "stage", "unsynced", "tmp", "listings"} {
-		if err := os.MkdirAll(filepath.Join(dir, sub), 0o700); err != nil {
+		if err := os.MkdirAll(filepath.Join(dir, sub), fsutil.DirPrivate); err != nil {
 			return nil, err
 		}
 	}
 	// Staging and temp files from a previous run are leftovers.
 	_ = os.RemoveAll(filepath.Join(dir, "stage"))
 	_ = os.RemoveAll(filepath.Join(dir, "tmp"))
-	_ = os.MkdirAll(filepath.Join(dir, "stage"), 0o700)
-	_ = os.MkdirAll(filepath.Join(dir, "tmp"), 0o700)
+	_ = os.MkdirAll(filepath.Join(dir, "stage"), fsutil.DirPrivate)
+	_ = os.MkdirAll(filepath.Join(dir, "tmp"), fsutil.DirPrivate)
 	if keep == nil {
 		keep = func(string) bool { return false }
 	}
@@ -173,7 +174,7 @@ func (c *contentCache) fetch(ctx context.Context, m *Mounted, n drive.Node, remo
 			"skipped", sum.SkippedItems, "failed", sum.FailedItems, "found", len(found), "err", err)
 		return "", syscall.EIO
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), fsutil.DirPrivate); err != nil {
 		c.log.Error("cache directory", "err", err)
 		return "", syscall.EIO
 	}
@@ -193,7 +194,7 @@ func (c *contentCache) seed(n drive.Node, from string) {
 	l.Lock()
 	defer l.Unlock()
 	path := c.pathFor(n)
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), fsutil.DirPrivate); err != nil {
 		c.log.Error("cache directory", "err", err)
 		return
 	}

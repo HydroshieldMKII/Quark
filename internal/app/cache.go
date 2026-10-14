@@ -141,5 +141,5 @@ func (c *listCache) save(data []byte) error {
 	}
 	c.saveMu.Lock()
 	defer c.saveMu.Unlock()
-	return fsutil.WriteFileAtomic(c.path, data, 0o600)
+	return fsutil.WriteFileAtomic(c.path, data, fsutil.FilePrivate)
 }

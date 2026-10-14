@@ -6,11 +6,17 @@ import (
 	"path/filepath"
 )
 
+// Owner-only permissions.
+const (
+	DirPrivate  os.FileMode = 0o700
+	FilePrivate os.FileMode = 0o600
+)
+
 // WriteFileAtomic writes data to path so that readers see either the old or
 // the new content, never a partial file, even if the process crashes.
 func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if err := os.MkdirAll(dir, DirPrivate); err != nil {
 		return err
 	}
 	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".tmp-*")

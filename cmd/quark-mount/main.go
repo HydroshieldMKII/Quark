@@ -26,6 +26,7 @@ import (
 	"syscall"
 	"time"
 
+	"example.org/quark/internal/fsutil"
 	"example.org/quark/internal/fusefs"
 	"example.org/quark/internal/pdcli"
 	"example.org/quark/internal/xlog"
@@ -98,7 +99,7 @@ func run(args []string, stdout, stderr *os.File) int {
 		}
 		*cacheDir = filepath.Join(c, "quark", "mount")
 	}
-	if err := os.MkdirAll(*cacheDir, 0o700); err != nil {
+	if err := os.MkdirAll(*cacheDir, fsutil.DirPrivate); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}

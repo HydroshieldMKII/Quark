@@ -206,5 +206,5 @@ func Save(path string, s Settings) error {
 	if err != nil {
 		return err
 	}
-	return fsutil.WriteFileAtomic(path, append(data, '\n'), 0o600)
+	return fsutil.WriteFileAtomic(path, append(data, '\n'), fsutil.FilePrivate)
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 
 	"example.org/quark/data"
+	"example.org/quark/internal/fsutil"
 )
 
 // installIcons makes the app icon available when Quark runs uninstalled: the
@@ -34,8 +35,8 @@ func installIcons() {
 		if old, oerr := os.ReadFile(dst); oerr == nil && bytes.Equal(old, content) { //nolint:gosec // our own cache path
 			return nil
 		}
-		if mkerr := os.MkdirAll(filepath.Dir(dst), 0o700); mkerr == nil {
-			_ = os.WriteFile(dst, content, 0o600)
+		if mkerr := os.MkdirAll(filepath.Dir(dst), fsutil.DirPrivate); mkerr == nil {
+			_ = os.WriteFile(dst, content, fsutil.FilePrivate)
 		}
 		return nil
 	})

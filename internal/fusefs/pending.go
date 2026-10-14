@@ -50,7 +50,7 @@ type pendingStore struct {
 }
 
 func newPendingStore(dir string) (*pendingStore, error) {
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if err := os.MkdirAll(dir, fsutil.DirPrivate); err != nil {
 		return nil, err
 	}
 	p := &pendingStore{dir: dir, entries: map[string]*pendingEntry{}}
@@ -81,7 +81,7 @@ func (p *pendingStore) load() error {
 		}
 		if rerr != nil || e.UID == "" {
 			lost := filepath.Join(p.dir, "lost")
-			_ = os.MkdirAll(lost, 0o700)
+			_ = os.MkdirAll(lost, fsutil.DirPrivate)
 			_ = os.Rename(full, filepath.Join(lost, time.Now().Format("20060102-150405")+"-"+d.Name()))
 			continue
 		}
@@ -95,7 +95,7 @@ func (p *pendingStore) save(e *pendingEntry) error {
 	if err != nil {
 		return err
 	}
-	return fsutil.WriteFileAtomic(filepath.Join(e.dir(p.dir), "meta.json"), data, 0o600)
+	return fsutil.WriteFileAtomic(filepath.Join(e.dir(p.dir), "meta.json"), data, fsutil.FilePrivate)
 }
 
 // put records a new content file (moved from path) for uid. It replaces any
@@ -107,7 +107,7 @@ func (p *pendingStore) put(uid, name, parent, baseRevision, path string) (*pendi
 	e := p.entries[uid]
 	if e == nil {
 		e = &pendingEntry{UID: uid, Name: name, Parent: parent, BaseRevision: baseRevision}
-		if err := os.MkdirAll(e.dir(p.dir), 0o700); err != nil {
+		if err := os.MkdirAll(e.dir(p.dir), fsutil.DirPrivate); err != nil {
 			return nil, err
 		}
 		p.entries[uid] = e
