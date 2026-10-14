@@ -1,9 +1,9 @@
 # Proton Drive as a folder (`quark-mount`)
 
 `quark-mount` shows your drive as a folder for Files and any other program, files on demand with
-offline copies of what you pin:
+offline copies of what you pin.
 
-### Install
+## Install
 
 From a [release](https://github.com/HydroshieldMKII/Quark/releases) (linux amd64 or arm64; see `INSTALL.txt` in
 the tarball), or from a clone:
@@ -14,7 +14,7 @@ systemctl --user enable --now quark-mount   # mounts ~/ProtonDrive now and at ev
 nautilus -q                                 # Files reloads with the Quark menu and emblems
 ```
 
-How it behaves:
+## How it behaves
 
 - **Files download when opened** and stay in a bounded cache (1 GiB by default, oldest dropped
   first). Folder listings are saved too, so the tree stays browsable offline after a restart.
@@ -34,7 +34,9 @@ How it behaves:
   `quark-mount sync ~/ProtonDrive` retries now. Everything is also reachable from any program
   through extended attributes (`user.quark.state`, `user.quark.pin`, …).
 
-Limits for now: creating a *new* file needs the connection (editing existing ones does not);
+## Limits for now
+
+Creating a *new* file needs the connection (editing existing ones does not);
 the mount runs on the host (FUSE is not available inside the Flatpak sandbox) with the
 `proton-drive` CLI from your PATH and its own sign-in (`proton-drive auth login`). Copies that
 could not be kept in the journal land in `~/.cache/quark/mount/unsynced`.
