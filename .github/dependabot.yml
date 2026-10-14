@@ -7,7 +7,6 @@ updates:
     groups:
       go-minor-patch:
         update-types: [minor, patch]
-  # Actions are pinned to commit SHAs; this keeps the pins current.
   - package-ecosystem: github-actions
     directory: /
     schedule:

@@ -1,6 +1,4 @@
 name: release
-# Pushing a tag such as v0.1.0 publishes a GitHub release with the quark-mount binary.
-# Tags matching v* are protected by the "Release tags" ruleset (no deletion or moving).
 on:
   push:
     tags: ["v*"]
@@ -12,7 +10,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # create the release and upload its files
+      contents: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -21,7 +19,7 @@ jobs:
         run: |
           git fetch origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "tag is not on main"; exit 1; }
-      - name: Build quark-mount (pure Go, no GTK needed)
+      - name: Build quark-mount
         env:
           TAG: ${{ github.ref_name }}
           CGO_ENABLED: "0"

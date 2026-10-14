@@ -1,13 +1,12 @@
 # Architecture
 
-A one-page map for people and coding agents. The long design record, with the reasoning, the
-verified CLI facts and the milestone history, is [`PLAN.md`](PLAN.md); the rules every change must
-respect are in [`../AGENTS.md`](../AGENTS.md).
+For contributors and coding agents.
+
+Design record: [`PLAN.md`](PLAN.md). Rules: [`../AGENTS.md`](../AGENTS.md).
 
 ## What Quark is
 
-Two front ends share one core. Neither talks to Proton: both run the official `proton-drive` CLI
-through `internal/pdcli`, so files stay end-to-end encrypted and Quark never sees credentials.
+Two front ends share one core. Both run the official `proton-drive` CLI through `internal/pdcli`.
 
 ```
 cmd/quark ──► internal/ui ──► internal/app ──┐
