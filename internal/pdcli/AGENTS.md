@@ -1,5 +1,7 @@
 # internal/pdcli
 
+For coding agents.
+
 The only package that runs the Proton Drive CLI (with `internal/testutil`). Read `CONTRACT.md` before changing a parser.
 
 - Every subprocess has a context, its own process group, a kill path and an entry in the ProcessTable. No TTY, no interactive prompt: conflict strategies are always explicit.

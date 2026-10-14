@@ -1,4 +1,6 @@
-# Quark — agent instructions
+# Quark
+
+For coding agents.
 
 Start with `docs/ARCHITECTURE.md`. Packages with their own rules have a nested `AGENTS.md`.
 `docs/PLAN.md` is the design record; section 1 is verified fact about the CLI.

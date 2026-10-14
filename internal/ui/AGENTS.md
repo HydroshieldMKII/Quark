@@ -1,5 +1,7 @@
 # internal/ui
 
+For coding agents.
+
 GTK 4 / libadwaita views. Read the root `AGENTS.md` and `docs/ARCHITECTURE.md` first.
 
 - Widgets are touched only on the GTK main thread, through `RunTask`/`Dispatch`. Never from a goroutine.

@@ -1,5 +1,7 @@
 # Architecture
 
+For contributors and coding agents.
+
 Design record: [`PLAN.md`](PLAN.md). Rules: [`../AGENTS.md`](../AGENTS.md).
 
 ## What Quark is

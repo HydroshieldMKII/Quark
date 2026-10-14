@@ -1,5 +1,7 @@
 # internal/fusefs
 
+For coding agents.
+
 The FUSE mount. Read the package comment in `fusefs.go` and `docs/ARCHITECTURE.md` first.
 
 - Saving must never fail for lack of network: changes are journaled in `<cache>/pending` first, then uploaded with retries. A remote change in the meantime turns the upload into a conflict copy; nothing is lost.
