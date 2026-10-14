@@ -37,7 +37,9 @@ CI skips the build and test jobs for documentation-only changes (`*.md`, `docs/`
 
 ## Releasing
 
-Maintainers tag a commit that is already on `main`: `git tag -a v0.1.0 -m "Quark 0.1.0" && git push origin v0.1.0`.
+Maintainers tag a commit that is already on `main`. Pull first (`git switch main && git pull --ff-only`):
+squash merges create a new commit, so tagging the branch commit points at one that is not on `main`
+and the release refuses it. `git tag -a v0.1.0 -m "Quark 0.1.0" && git push origin v0.1.0`.
 The `release` workflow then builds `quark-mount` for linux/amd64 and arm64 (tarball with the service
 file and Files extension, plus `SHA256SUMS`) and creates a GitHub release with generated notes. Tags
 with a `-` (for example `v0.2.0-rc1`) are marked as pre-releases. Release tags cannot be moved or
