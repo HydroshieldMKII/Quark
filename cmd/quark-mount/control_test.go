@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -61,5 +63,35 @@ func TestRunUsage(t *testing.T) {
 	}
 	if code := run([]string{"-bogus"}, devnull, devnull); code != 2 {
 		t.Fatalf("bad flag: %d", code)
+	}
+}
+
+// A missing sign-in must exit with a code that stops systemd from restarting the unit.
+func TestRunNotSignedIn(t *testing.T) {
+	devnull, err := openDevNull()
+	if err != nil {
+		t.Skip(err)
+	}
+	defer devnull.Close()
+	dir := t.TempDir()
+	t.Setenv("XDG_STATE_HOME", filepath.Join(dir, "state"))
+	t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
+	cli := filepath.Join(dir, "proton-drive")
+	script := "#!/bin/sh\necho 'You need to login first' >&2\nexit 1\n"
+	if err := os.WriteFile(cli, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	mnt := filepath.Join(dir, "mnt")
+	if err := os.Mkdir(mnt, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	errf, err := os.Create(filepath.Join(dir, "stderr"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer errf.Close()
+	if code := run([]string{"-cli", cli, mnt}, devnull, errf); code != exitNotSignedIn {
+		out, _ := os.ReadFile(errf.Name())
+		t.Fatalf("exit code %d, want %d; stderr: %s", code, exitNotSignedIn, out)
 	}
 }

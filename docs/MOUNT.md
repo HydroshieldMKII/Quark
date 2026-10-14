@@ -50,3 +50,6 @@ could not be kept in the journal land in `~/.cache/quark/mount/unsynced`.
 - **`quark-mount` says the folder is busy on unmount.** Close programs that have files open in
   the folder, then run `fusermount3 -u ~/ProtonDrive`. Files that could not be uploaded are kept
   under `~/.cache/quark/mount/unsynced/`.
+- **The service stays stopped and the journal says `not signed in`.** Run `proton-drive auth login`,
+  then `systemctl --user start quark-mount`. The unit does not retry in this case (exit code 78).
+  If it was installed before this behaviour, run `make install-mount` to update the unit file.
