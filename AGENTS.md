@@ -1,10 +1,7 @@
 # Quark — agent instructions
 
-This file is the single source of instructions for every coding agent (`CLAUDE.md` only imports it).
-Packages with their own rules have a nested `AGENTS.md`: read it before editing there.
-
-Start with `docs/ARCHITECTURE.md` (one-page map and rules). `docs/PLAN.md` is the long design record:
-section 1 is verified fact about the CLI; the milestone status in section 8 is history.
+Start with `docs/ARCHITECTURE.md`. Packages with their own rules have a nested `AGENTS.md`.
+`docs/PLAN.md` is the design record; section 1 is verified fact about the CLI.
 
 ## Git rules (hard)
 
@@ -14,8 +11,6 @@ section 1 is verified fact about the CLI; the milestone status in section 8 is h
   set again after a fresh clone (`git config core.hooksPath .githooks`).
 - Never author or amend commits with an AI identity. Never bypass hooks (`--no-verify`).
 - `origin` is a private GitHub remote. Never push, and never force-push, unless the owner asks.
-  History was rewritten once to remove personal data; keep names, emails and home paths out of
-  every new commit (see below).
 
 ## Stability invariants (from docs/PLAN.md §6.7)
 
