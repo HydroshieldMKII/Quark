@@ -10,7 +10,9 @@ test strategy, methodology (GitHub Spec Kit) and milestones to follow.
   `.githooks/` reject such commits; `core.hooksPath` is set to `.githooks` in this clone and must be
   set again after a fresh clone (`git config core.hooksPath .githooks`).
 - Never author or amend commits with an AI identity. Never bypass hooks (`--no-verify`).
-- Local repository only for now: do not add remotes or push unless the owner asks.
+- `origin` is a private GitHub remote. Never push, and never force-push, unless the owner asks.
+  History was rewritten once to remove personal data; keep names, emails and home paths out of
+  every new commit (see below).
 
 ## Stability invariants (from docs/PLAN.md §6.7)
 
