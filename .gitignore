@@ -20,3 +20,7 @@ coverage*.out
 /internal/pdcli/testdata/raw/
 # Never commit the CLI binary
 proton-drive
+
+# Python
+__pycache__/
+*.pyc

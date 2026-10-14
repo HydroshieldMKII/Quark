@@ -1,6 +1,6 @@
 # Quark — agent instructions
 
-Read `PLAN.md` first. Section 1 is verified fact; sections 3–8 are the decisions, architecture,
+Read `docs/PLAN.md` first. Section 1 is verified fact; sections 3–8 are the decisions, architecture,
 test strategy, methodology (GitHub Spec Kit) and milestones to follow.
 
 ## Git rules (hard)
@@ -12,7 +12,7 @@ test strategy, methodology (GitHub Spec Kit) and milestones to follow.
 - Never author or amend commits with an AI identity. Never bypass hooks (`--no-verify`).
 - Local repository only for now: do not add remotes or push unless the owner asks.
 
-## Stability invariants (from PLAN.md §6.7)
+## Stability invariants (from docs/PLAN.md §6.7)
 
 1. Widgets are touched only on the GTK main thread, through `RunTask`/`Dispatch`.
 2. Every subprocess has a context, a process group, a kill path and is tracked in the ProcessTable.

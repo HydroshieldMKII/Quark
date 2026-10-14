@@ -494,7 +494,7 @@ specify init . --integration claude    # older releases use --ai claude; check `
 # then in Claude Code:
 /speckit-constitution  → paste §6.7 + §3 decisions + §4.1 import rules
 /speckit-specify       → one spec per milestone in §8 (M1..M6), using §2 and §5 as the source
-/speckit-plan          → reference this PLAN.md; do not re-decide §3
+/speckit-plan          → reference docs/PLAN.md; do not re-decide §3
 /speckit-tasks         → tasks must include tests per §6.4
 /speckit-implement
 ```
@@ -705,7 +705,7 @@ pinning; sync folder (watch + upload) if the owner wants it.
 
 ## 11. Hand-off prompt for the implementing agent
 
-> Read `PLAN.md` fully. Section 1 is verified fact; do not re-probe the CLI except via
+> Read `docs/PLAN.md` fully. Section 1 is verified fact; do not re-probe the CLI except via
 > `tools/capture-fixtures`. Follow §3 decisions and §4 architecture exactly; §6.7 invariants are
 > non-negotiable and go into `CLAUDE.md`. Set up Spec Kit as in §7, write the constitution, then
 > deliver milestones M0→M6 in order, one PR each, with the gates in §8. Never touch widgets off the
