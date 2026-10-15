@@ -12,7 +12,6 @@ Start with `docs/ARCHITECTURE.md`. Packages with their own rules have a nested `
   `.githooks/` reject such commits; `core.hooksPath` is set to `.githooks` in this clone and must be
   set again after a fresh clone (`git config core.hooksPath .githooks`).
 - Never author or amend commits with an AI identity. Never bypass hooks (`--no-verify`).
-- `origin` is a private GitHub remote. Never push, and never force-push, unless the owner asks.
 
 ## Stability invariants
 
