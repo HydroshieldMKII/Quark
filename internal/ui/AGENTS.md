@@ -10,3 +10,4 @@ GTK 4 / libadwaita views. Read the root `AGENTS.md` and `docs/ARCHITECTURE.md` f
 - Every user-visible string goes through `T`/`Tf`/`N`/`M`; run `make i18n` and add the French entry.
 - Needs GTK headers or the GNOME SDK: build with `make build`, test with `make test-ui` (headless mutter, `G_DEBUG=fatal-criticals`: a GLib critical fails the test).
 - Look at your change: `build/headless.sh -- ./bin/quark --demo --screenshot out.png --screenshot-section my-files`.
+- Review every view in light and dark at 1280×800 and 400×700, with no layout jump while loading. Any action that can exceed 200 ms shows progress within 200 ms.

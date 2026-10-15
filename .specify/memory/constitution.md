@@ -1,7 +1,7 @@
 # Quark Constitution
 
 Quark is an unofficial native GNOME client for Proton Drive, written in Go, that drives the
-official `proton-drive` CLI. `docs/PLAN.md` holds the verified facts, decisions and milestones; this
+official `proton-drive` CLI. `docs/DECISIONS.md` holds the technology decisions; this
 constitution holds the rules that every spec, plan, task and line of code must obey.
 
 ## Core Principles
@@ -76,12 +76,11 @@ Quark and its tooling operate on a real Proton account with real files.
 ## Development Workflow
 
 - Spec Kit flow per milestone: specify → (clarify) → plan → tasks → (analyze) → implement.
-- One branch and one reviewed merge per milestone; gates from `docs/PLAN.md` §8 must pass:
+- One branch and one reviewed merge per milestone; these gates must pass:
   `make lint`, `make test` (with `-race`), `make test-ui` once the UI exists.
 - Commits are authored by the repository owner only and carry no AI attribution
   (no `Co-Authored-By`, no "Generated with", no robot emoji). Hooks in `.githooks/` enforce it;
   hooks are never bypassed.
-- The repository stays local until the owner adds a remote.
 
 ## Governance
 
@@ -91,4 +90,4 @@ follow semantic versioning (MAJOR for removed or redefined principles, MINOR for
 sections, PATCH for wording). Every plan's "Constitution Check" must list each principle as
 satisfied or justify the exception, and Principle I has no exceptions.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-03 | **Last Amended**: 2026-10-03
+**Version**: 1.0.1 | **Ratified**: 2026-10-03 | **Last Amended**: 2026-10-14

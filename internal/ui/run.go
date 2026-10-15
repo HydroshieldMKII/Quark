@@ -15,7 +15,7 @@ import (
 	"example.org/quark/internal/jobs"
 )
 
-// AppID is the application identifier (docs/PLAN.md, decision D1).
+// AppID is the application identifier.
 const AppID = "org.example.Quark"
 
 // Options configures Run.

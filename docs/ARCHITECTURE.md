@@ -2,7 +2,7 @@
 
 For contributors and coding agents.
 
-Design record: [`PLAN.md`](PLAN.md). Rules: [`../AGENTS.md`](../AGENTS.md).
+Rules: [`../AGENTS.md`](../AGENTS.md). See also [`DECISIONS.md`](DECISIONS.md) and [`TESTING.md`](TESTING.md).
 
 ## What Quark is
 

@@ -3,7 +3,7 @@
 For coding agents.
 
 Start with `docs/ARCHITECTURE.md`. Packages with their own rules have a nested `AGENTS.md`.
-`docs/PLAN.md` is the design record; section 1 is verified fact about the CLI.
+`internal/pdcli/CONTRACT.md` documents the CLI behaviour Quark relies on.
 
 ## Git rules (hard)
 
@@ -14,7 +14,7 @@ Start with `docs/ARCHITECTURE.md`. Packages with their own rules have a nested `
 - Never author or amend commits with an AI identity. Never bypass hooks (`--no-verify`).
 - `origin` is a private GitHub remote. Never push, and never force-push, unless the owner asks.
 
-## Stability invariants (from docs/PLAN.md §6.7)
+## Stability invariants
 
 1. Widgets are touched only on the GTK main thread, through `RunTask`/`Dispatch`.
 2. Every subprocess has a context, a process group, a kill path and is tracked in the ProcessTable.
