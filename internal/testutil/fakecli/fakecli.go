@@ -51,6 +51,10 @@ type Rule struct {
 	// WriteFile creates this file with WriteFileBytes bytes, slowly (downloads).
 	WriteFile      string `json:"writeFile,omitempty"`
 	WriteFileBytes int    `json:"writeFileBytes,omitempty"`
+	// EventsLock takes the CLI's events.lock first, as CLI 0.8 does: content
+	// that is not JSON crashes it before the rule runs, any other content is
+	// replaced by {"pid":N}, which is removed again on exit.
+	EventsLock bool `json:"eventsLock,omitempty"`
 }
 
 // Chunk is a piece of stdout written after DelayMs.
@@ -122,6 +126,15 @@ func run(args []string) int {
 	}
 	writeRecord(sc.RecordDir, rec)
 
+	if r.EventsLock {
+		lock, ok := takeEventsLock()
+		if !ok {
+			os.Stdout.WriteString(lockCrashStdout)
+			os.Stderr.WriteString(lockCrashStderr)
+			return 1
+		}
+		defer os.Remove(lock)
+	}
 	sleepMs(r.DelayMs)
 	if r.WriteFile != "" {
 		writeSlowly(r.WriteFile, r.WriteFileBytes)
@@ -146,6 +159,49 @@ func run(args []string) int {
 		select {}
 	}
 	return r.Exit
+}
+
+// The output of CLI 0.8 on a zero-filled events.lock.
+const (
+	lockCrashStdout = `19 |     const lockPath = eventsLockPath(cacheDir);
+20 |     await fs.mkdir(cacheDir, { recursive: true });
+21 |
+22 |     try {
+23 |         const raw = await fs.readFile(lockPath, 'utf8');
+24 |         const parsed = JSON.parse(raw) as unknown;
+                                 ^
+SyntaxError: JSON Parse error: Unrecognized token '\x00'
+      at Xp (src/events/lock.ts:24:29)
+      at async open (src/events/providerPersisted.ts:20:37)
+      at async KO (src/init.ts:51:41)
+`
+	lockCrashStderr = "===============================================\n"
+)
+
+// takeEventsLock resolves the lock like the CLI (PROTON_DRIVE_CACHE_DIR, else
+// $XDG_DATA_HOME/proton-drive-cli, else ~/.local/share/proton-drive-cli) and
+// writes this process's pid into it. It fails on content that is not JSON.
+func takeEventsLock() (string, bool) {
+	dir := os.Getenv("PROTON_DRIVE_CACHE_DIR")
+	if dir == "" {
+		data := os.Getenv("XDG_DATA_HOME")
+		if data == "" {
+			data = filepath.Join(os.Getenv("HOME"), ".local", "share")
+		}
+		dir = filepath.Join(data, "proton-drive-cli")
+	}
+	lock := filepath.Join(dir, "events.lock")
+	if err := os.MkdirAll(dir, fsutil.DirPrivate); err != nil {
+		return lock, false
+	}
+	if raw, err := os.ReadFile(lock); err == nil {
+		if !json.Valid(raw) {
+			return lock, false
+		}
+		_ = os.Remove(lock)
+	}
+	b, _ := json.Marshal(map[string]int{"pid": os.Getpid()})
+	return lock, os.WriteFile(lock, b, fsutil.FilePrivate) == nil
 }
 
 func matches(r Rule, args []string) bool {

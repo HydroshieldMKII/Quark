@@ -2,10 +2,8 @@ package pdcli
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -27,32 +25,11 @@ type Client struct {
 	// decrypts every item, and a large trash took over a minute in testing.
 	// Navigating away cancels a listing, so a generous limit costs nothing.
 	ListTimeout time.Duration
-	// EventsLock is the CLI's events.lock pid file; empty disables the repair
-	// of a corrupt lock (default: DefaultEventsLock).
-	EventsLock string
 }
 
 // NewClient returns a Client using r.
 func NewClient(r Runner) *Client {
-	return &Client{runner: r, MetaTimeout: 2 * time.Minute, LoginTimeout: 10 * time.Minute, ListTimeout: 10 * time.Minute, EventsLock: DefaultEventsLock()}
-}
-
-// DefaultEventsLock returns where the CLI keeps events.lock: in
-// PROTON_DRIVE_CACHE_DIR if set, else in $XDG_DATA_HOME/proton-drive-cli
-// (inside the Flatpak sandbox XDG_DATA_HOME points into ~/.var/app).
-func DefaultEventsLock() string {
-	if dir := os.Getenv("PROTON_DRIVE_CACHE_DIR"); dir != "" {
-		return filepath.Join(dir, "events.lock")
-	}
-	data := os.Getenv("XDG_DATA_HOME")
-	if data == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return ""
-		}
-		data = filepath.Join(home, ".local", "share")
-	}
-	return filepath.Join(data, "proton-drive-cli", "events.lock")
+	return &Client{runner: r, MetaTimeout: 2 * time.Minute, LoginTimeout: 10 * time.Minute, ListTimeout: 10 * time.Minute}
 }
 
 // startupRetries is how many times a command is started again when the CLI
@@ -62,20 +39,14 @@ func DefaultEventsLock() string {
 // moment later is safe for every command.
 const startupRetries = 4
 
-// run executes a request, retrying CLI startup collisions and, once, a
-// startup crash on a corrupt events.lock after moving that file aside.
+// run executes a request, retrying CLI startup collisions.
 func (c *Client) run(ctx context.Context, req Request) (Result, error) {
 	var (
-		res      Result
-		err      error
-		repaired bool
+		res Result
+		err error
 	)
 	for attempt := 0; ; attempt++ {
 		res, err = c.runner.Run(ctx, req)
-		if !repaired && isCorruptEventsLock(err) && repairEventsLock(c.EventsLock) {
-			repaired = true
-			continue
-		}
 		if err == nil || attempt >= startupRetries || !isStartupCollision(err) {
 			return res, err
 		}
@@ -95,31 +66,6 @@ func isStartupCollision(err error) bool {
 		return false
 	}
 	return strings.Contains(e.Stderr, "SQLITE_BUSY") || strings.Contains(e.Stderr, "database is locked")
-}
-
-// isCorruptEventsLock reports whether err is the CLI crashing while parsing
-// its events.lock, which happens when the file was left zero-filled or
-// truncated by a power loss or a hard reset.
-func isCorruptEventsLock(err error) bool {
-	var e *Error
-	if !errors.As(err, &e) || e.Kind != KindCrash {
-		return false
-	}
-	return strings.Contains(e.Stderr, "events/lock.ts") && strings.Contains(e.Stderr, "JSON Parse error")
-}
-
-// repairEventsLock renames path aside if it does not hold valid JSON and
-// reports whether it did. The file is only a pid file: the CLI writes a new
-// one on its next start.
-func repairEventsLock(path string) bool {
-	if path == "" {
-		return false
-	}
-	raw, err := os.ReadFile(path) //nolint:gosec // path comes from DefaultEventsLock or tests
-	if err != nil || json.Valid(raw) {
-		return false
-	}
-	return os.Rename(path, path+".corrupt") == nil
 }
 
 func usageErr(command, format string, args ...any) error {
