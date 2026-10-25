@@ -24,6 +24,7 @@ import (
 const lockSettle = 100 * time.Millisecond
 
 // maxLockSize bounds how much of the lock is read; a pid file is a few bytes.
+// A larger file is not judged: the CLI replaces any valid JSON itself.
 const maxLockSize = 4 << 10
 
 // eventsLockPath returns the events.lock a CLI started with env reads:
@@ -76,27 +77,45 @@ func repairEventsLock(ctx context.Context, log *slog.Logger, path string) bool {
 	case <-ctx.Done():
 		return false
 	}
-	if !lockCorrupt(path) {
-		log.Info("CLI events.lock was rewritten meanwhile; retrying", "path", path)
-		return true
-	}
 	aside := path + ".corrupt"
+	if !lockCorrupt(path) {
+		// Rewritten meanwhile, or moved aside by a concurrent run. A lock that
+		// simply went away (its CLI exited) says nothing about this crash.
+		if exists(path) || exists(aside) {
+			log.Info("CLI events.lock was repaired meanwhile; retrying", "path", path)
+			return true
+		}
+		return false
+	}
 	if err := os.Rename(path, aside); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return true // a concurrent run moved it
 		}
-		log.Warn("cannot move the corrupt CLI events.lock aside", "path", path, "err", err)
-		return false
+		// Keeping a copy is not worth staying offline: it is only a pid file.
+		if rerr := os.Remove(path); rerr != nil && !errors.Is(rerr, fs.ErrNotExist) {
+			log.Warn("cannot remove the corrupt CLI events.lock", "path", path, "err", err, "removeErr", rerr)
+			return false
+		}
+		log.Warn("CLI events.lock was corrupt; removed and retrying", "path", path, "renameErr", err)
+		return true
 	}
 	if !lockCorrupt(aside) {
 		// A concurrent run's fresh lock was written between the check and the
 		// rename: put it back unless yet another one exists by now.
-		_ = os.Link(aside, path)
-		_ = os.Remove(aside)
+		if err := os.Link(aside, path); err == nil || errors.Is(err, fs.ErrExist) {
+			_ = os.Remove(aside)
+		} else {
+			_ = os.Rename(aside, path) // no hard links on this filesystem
+		}
 		return true
 	}
 	log.Warn("CLI events.lock was corrupt; moved aside and retrying", "path", path, "kept", aside)
 	return true
+}
+
+func exists(path string) bool {
+	_, err := os.Lstat(path)
+	return err == nil
 }
 
 // lockCorrupt reports whether path exists and does not hold valid JSON.
@@ -110,5 +129,5 @@ func lockCorrupt(path string) bool {
 	if err != nil {
 		return false
 	}
-	return len(raw) > maxLockSize || !json.Valid(raw)
+	return len(raw) <= maxLockSize && !json.Valid(raw)
 }

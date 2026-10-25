@@ -141,11 +141,24 @@ func TestRepairEventsLock(t *testing.T) {
 	if repairEventsLock(ctx, log, "") || repairEventsLock(ctx, log, filepath.Join(dir, "missing")) {
 		t.Error("nothing to repair reported as repaired")
 	}
-	// A lock larger than any pid file is corrupt even if it would parse.
+	// A lock larger than any pid file is not judged (nor read whole).
 	big := filepath.Join(dir, "big.lock")
-	writeLock(t, big, []byte(`"`+strings.Repeat("x", maxLockSize)+`"`))
-	if !repairEventsLock(ctx, log, big) {
-		t.Error("oversized lock not repaired")
+	writeLock(t, big, []byte(strings.Repeat("x", maxLockSize+1)))
+	if repairEventsLock(ctx, log, big) {
+		t.Error("oversized lock repaired")
+	}
+	// A corrupt lock that cannot be renamed (a directory holds the backup
+	// name) is removed instead: staying offline is worse than losing a pid.
+	stuck := filepath.Join(dir, "stuck.lock")
+	writeLock(t, stuck, make([]byte, 15))
+	if err := os.MkdirAll(filepath.Join(stuck+".corrupt", "keep"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if !repairEventsLock(ctx, log, stuck) {
+		t.Error("unrenamable lock: want removed and retried")
+	}
+	if exists(stuck) {
+		t.Error("unrenamable lock still there")
 	}
 	// A cancelled run does not wait or move anything.
 	lock := filepath.Join(dir, "events.lock")
@@ -177,6 +190,22 @@ func TestRepairEventsLockSettles(t *testing.T) {
 		}
 		if _, err := os.Stat(lock + ".corrupt"); !os.IsNotExist(err) {
 			t.Errorf("lock in progress moved aside: %v", err)
+		}
+	})
+}
+
+// A lock whose CLI exits and removes it during the settle time was not the
+// cause of the crash: no retry.
+func TestRepairEventsLockVanished(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		lock := filepath.Join(t.TempDir(), "events.lock")
+		writeLock(t, lock, nil)
+		go func() {
+			time.Sleep(lockSettle / 2)
+			_ = os.Remove(lock)
+		}()
+		if repairEventsLock(context.Background(), slog.New(slog.DiscardHandler), lock) {
+			t.Error("vanished lock: want no retry")
 		}
 	})
 }

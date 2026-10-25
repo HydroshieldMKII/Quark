@@ -94,7 +94,9 @@ func (r *ExecRunner) Run(ctx context.Context, req Request) (Result, error) {
 			log = slog.Default()
 		}
 		if repairEventsLock(ctx, log, eventsLockPath(env)) {
-			return r.run(ctx, req, env)
+			first := res.Duration
+			res, err = r.run(ctx, req, env)
+			res.Duration += first
 		}
 	}
 	return res, err
