@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
@@ -72,10 +73,36 @@ type ExecRunner struct {
 	// ExtraEnv is applied after the allow-list on every run (e.g. the log level).
 	// Request.Env overrides it.
 	ExtraEnv map[string]string
+	// Logger receives the events.lock repairs; nil means slog.Default().
+	Logger *slog.Logger
 }
 
-// Run implements Runner.
+// Run implements Runner. A crash caused by a corrupt events.lock is
+// repaired and the command started once more: the CLI crashes on it at
+// startup, before doing any work. Kills by signal are never retried.
 func (r *ExecRunner) Run(ctx context.Context, req Request) (Result, error) {
+	environ := os.Environ
+	if r.Environ != nil {
+		environ = r.Environ
+	}
+	env := buildEnv(environ(), mergeEnv(r.ExtraEnv, req.Env))
+	res, err := r.run(ctx, req, env)
+	var e *Error
+	if errors.As(err, &e) && e.Kind == KindCrash && e.ExitCode > 0 {
+		log := r.Logger
+		if log == nil {
+			log = slog.Default()
+		}
+		if repairEventsLock(ctx, log, eventsLockPath(env)) {
+			first := res.Duration
+			res, err = r.run(ctx, req, env)
+			res.Duration += first
+		}
+	}
+	return res, err
+}
+
+func (r *ExecRunner) run(ctx context.Context, req Request, env []string) (Result, error) {
 	command := CommandName(req.Args)
 	if r.Binary == "" {
 		return Result{}, &Error{Kind: KindBinaryMissing, Command: command, Message: "Proton Drive CLI not configured"}
@@ -114,11 +141,7 @@ func (r *ExecRunner) Run(ctx context.Context, req Request) (Result, error) {
 	}
 
 	cmd := exec.CommandContext(runCtx, r.Binary, req.Args...)
-	environ := os.Environ
-	if r.Environ != nil {
-		environ = r.Environ
-	}
-	cmd.Env = buildEnv(environ(), mergeEnv(r.ExtraEnv, req.Env))
+	cmd.Env = env
 	cmd.Dir = r.Dir
 	if cmd.Dir == "" {
 		if home, err := os.UserHomeDir(); err == nil {
