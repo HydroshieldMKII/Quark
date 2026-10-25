@@ -2,6 +2,9 @@ package pdcli
 
 import (
 	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -432,5 +435,70 @@ func TestStartupCollisionIsRetried(t *testing.T) {
 	c = NewClient(r)
 	if _, err := c.List(ctx, "/my-files"); err == nil || r.runs != 1 {
 		t.Fatalf("cancelled: %v, runs = %d", err, r.runs)
+	}
+}
+
+// lockRunner behaves like the CLI reading its events.lock: it crashes while
+// the file is not valid JSON.
+type lockRunner struct {
+	memRunner
+	lock string
+	runs int
+}
+
+func (r *lockRunner) Run(ctx context.Context, req Request) (Result, error) {
+	r.runs++
+	if raw, err := os.ReadFile(r.lock); err == nil && !json.Valid(raw) {
+		return Result{ExitCode: 1}, &Error{
+			Kind: KindCrash, Command: "filesystem list", Message: "the Proton Drive CLI crashed",
+			Stderr: crashMarker + "\n[stdout tail] SyntaxError: JSON Parse error: Unrecognized token '\x00'\n      at Xp (src/events/lock.ts:24:29)",
+		}
+	}
+	return r.memRunner.Run(ctx, req)
+}
+
+func TestCorruptEventsLockIsRepaired(t *testing.T) {
+	lock := filepath.Join(t.TempDir(), "events.lock")
+	if err := os.WriteFile(lock, make([]byte, 15), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r := &lockRunner{lock: lock}
+	r.res = Result{Stdout: []byte("[]")}
+	c := NewClient(r)
+	c.EventsLock = lock
+	if _, err := c.List(context.Background(), "/my-files"); err != nil {
+		t.Fatalf("list after corrupt lock: %v", err)
+	}
+	if r.runs != 2 {
+		t.Fatalf("runs = %d, want 2", r.runs)
+	}
+	if _, err := os.Stat(lock + ".corrupt"); err != nil {
+		t.Fatalf("corrupt lock not kept aside: %v", err)
+	}
+
+	// A valid lock is never touched, and the crash surfaces after one try.
+	if err := os.WriteFile(lock, []byte(`{"pid":1}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	crash := &memRunner{err: &Error{Kind: KindCrash, Stderr: crashMarker + "\nJSON Parse error\n at (src/events/lock.ts:24:29)"}}
+	c = NewClient(crash)
+	c.EventsLock = lock
+	if _, err := c.List(context.Background(), "/my-files"); !IsKind(err, KindCrash) || len(crash.reqs) != 1 {
+		t.Fatalf("valid lock: %v, %d runs", err, len(crash.reqs))
+	}
+	if raw, _ := os.ReadFile(lock); string(raw) != `{"pid":1}` {
+		t.Fatalf("valid lock changed: %q", raw)
+	}
+}
+
+func TestDefaultEventsLock(t *testing.T) {
+	t.Setenv("PROTON_DRIVE_CACHE_DIR", "/c")
+	if got := DefaultEventsLock(); got != "/c/events.lock" {
+		t.Errorf("cache dir: %q", got)
+	}
+	t.Setenv("PROTON_DRIVE_CACHE_DIR", "")
+	t.Setenv("XDG_DATA_HOME", "/d")
+	if got := DefaultEventsLock(); got != "/d/proton-drive-cli/events.lock" {
+		t.Errorf("xdg: %q", got)
 	}
 }
