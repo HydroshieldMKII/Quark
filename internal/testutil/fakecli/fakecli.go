@@ -200,8 +200,14 @@ func takeEventsLock() (string, bool) {
 		}
 		_ = os.Remove(lock)
 	}
+	f, err := os.OpenFile(lock, os.O_WRONLY|os.O_CREATE|os.O_EXCL, fsutil.FilePrivate)
+	if err != nil {
+		return lock, false
+	}
+	defer f.Close()
 	b, _ := json.Marshal(map[string]int{"pid": os.Getpid()})
-	return lock, os.WriteFile(lock, b, fsutil.FilePrivate) == nil
+	_, err = f.Write(b)
+	return lock, err == nil
 }
 
 func matches(r Rule, args []string) bool {

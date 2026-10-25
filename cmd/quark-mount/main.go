@@ -118,7 +118,7 @@ func run(args []string, stdout, stderr *os.File) int {
 		return 1
 	}
 	table := pdcli.NewProcessTable()
-	client := pdcli.NewClient(&pdcli.ExecRunner{Binary: bin, Table: table})
+	client := pdcli.NewClient(&pdcli.ExecRunner{Binary: bin, Table: table, Logger: logger})
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	// Being offline at start is fine: saved listings and cached content

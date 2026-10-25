@@ -2,9 +2,12 @@ package pdcli
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"example.org/quark/internal/testutil/fakecli"
@@ -122,7 +125,8 @@ func TestEventsLockPath(t *testing.T) {
 		{[]string{"HOME=/h"}, "/h/.local/share/proton-drive-cli/events.lock"},
 		{[]string{"HOME=/h", "XDG_DATA_HOME=/x"}, "/x/proton-drive-cli/events.lock"},
 		{[]string{"HOME=/h", "XDG_DATA_HOME=/x", "PROTON_DRIVE_CACHE_DIR=/c"}, "/c/events.lock"},
-		{[]string{"HOMEDIR=/no"}, ""},
+		{[]string{"HOME=/h", "XDG_DATA_HOME=rel"}, ""},
+		{[]string{"HOME=/h", "PROTON_DRIVE_CACHE_DIR=rel"}, ""},
 	} {
 		if got := eventsLockPath(tc.env); got != tc.want {
 			t.Errorf("eventsLockPath(%q) = %q, want %q", tc.env, got, tc.want)
@@ -130,35 +134,49 @@ func TestEventsLockPath(t *testing.T) {
 	}
 }
 
-func TestRepairEventsLockSettles(t *testing.T) {
+func TestRepairEventsLock(t *testing.T) {
 	ctx := context.Background()
-	if repairEventsLock(ctx, "") || repairEventsLock(ctx, filepath.Join(t.TempDir(), "missing")) {
+	log := slog.New(slog.DiscardHandler)
+	dir := t.TempDir()
+	if repairEventsLock(ctx, log, "") || repairEventsLock(ctx, log, filepath.Join(dir, "missing")) {
 		t.Error("nothing to repair reported as repaired")
 	}
-	// A lock still being written when first read is not moved aside.
-	lock := filepath.Join(t.TempDir(), "events.lock")
-	writeLock(t, lock, nil)
-	old := lockSettle
-	lockSettle = 300 * time.Millisecond
-	t.Cleanup(func() { lockSettle = old })
-	go func() {
-		time.Sleep(50 * time.Millisecond)
-		_ = os.WriteFile(lock, []byte(`{"pid":1}`), 0o600)
-	}()
-	if !repairEventsLock(ctx, lock) {
-		t.Error("lock written during the settle time: want a retry")
-	}
-	if _, err := os.Stat(lock + ".corrupt"); !os.IsNotExist(err) {
-		t.Errorf("lock in progress moved aside: %v", err)
+	// A lock larger than any pid file is corrupt even if it would parse.
+	big := filepath.Join(dir, "big.lock")
+	writeLock(t, big, []byte(`"`+strings.Repeat("x", maxLockSize)+`"`))
+	if !repairEventsLock(ctx, log, big) {
+		t.Error("oversized lock not repaired")
 	}
 	// A cancelled run does not wait or move anything.
+	lock := filepath.Join(dir, "events.lock")
 	writeLock(t, lock, nil)
 	cancelled, cancel := context.WithCancel(ctx)
 	cancel()
-	if repairEventsLock(cancelled, lock) {
+	if repairEventsLock(cancelled, log, lock) {
 		t.Error("cancelled: want no retry")
 	}
 	if _, err := os.Stat(lock); err != nil {
 		t.Errorf("cancelled: lock moved: %v", err)
 	}
+}
+
+// A lock still being written when first read is left in place.
+func TestRepairEventsLockSettles(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		lock := filepath.Join(t.TempDir(), "events.lock")
+		writeLock(t, lock, nil)
+		go func() {
+			time.Sleep(lockSettle / 2)
+			_ = os.WriteFile(lock, []byte(`{"pid":1}`), 0o600)
+		}()
+		if !repairEventsLock(context.Background(), slog.New(slog.DiscardHandler), lock) {
+			t.Error("lock written during the settle time: want a retry")
+		}
+		if raw, err := os.ReadFile(lock); err != nil || string(raw) != `{"pid":1}` {
+			t.Errorf("lock in progress changed: %q, %v", raw, err)
+		}
+		if _, err := os.Stat(lock + ".corrupt"); !os.IsNotExist(err) {
+			t.Errorf("lock in progress moved aside: %v", err)
+		}
+	})
 }
