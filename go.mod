@@ -6,7 +6,7 @@ require (
 	github.com/diamondburned/gotk4-adwaita/pkg v0.0.0-20260808200908-d4aecaa0ff32
 	github.com/diamondburned/gotk4/pkg v0.4.1
 	github.com/godbus/dbus/v5 v5.2.4
-	github.com/hanwen/go-fuse/v2 v2.12.0
+	github.com/hanwen/go-fuse/v2 v2.12.1
 	go.uber.org/goleak v1.3.0
 	pgregory.net/rapid v1.3.0
 )
